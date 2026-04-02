@@ -1,0 +1,73 @@
+{
+  "updated_at": "2026-04-02T00:54:33.434824",
+  "platforms": {
+    "discord": [
+      {
+        "id": "1474242034356326442",
+        "name": "general",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1474930661520310444",
+        "name": "agente",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1479284254859989143",
+        "name": "diario",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1474829220852142180",
+        "name": "proyectos",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1474829119811490054",
+        "name": "investigación",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1474829285083578610",
+        "name": "notas",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1476334755434860690",
+        "name": "test-channel",
+        "guild": "Servidor de Diego",
+        "type": "channel"
+      },
+      {
+        "id": "1474242034356326442",
+        "name": "Servidor de Diego / #general",
+        "type": "group",
+        "thread_id": null
+      },
+      {
+        "id": "1488828110680883332:1488828110680883332",
+        "name": "Servidor de Diego / #agente / Por qué no está funcionando la comunicación por Telegram? / topic 1488828110680883332",
+        "type": "thread",
+        "thread_id": "1488828110680883332"
+      }
+    ],
+    "telegram": [
+      {
+        "id": "1093162286",
+        "name": "Diego",
+        "type": "dm",
+        "thread_id": null
+      }
+    ],
+    "whatsapp": [],
+    "signal": [],
+    "email": [],
+    "sms": []
+  }
+}
