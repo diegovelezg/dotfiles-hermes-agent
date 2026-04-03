@@ -32,44 +32,71 @@ Usuario (Telegram/Discord)
 
 ## Sistema de Memorias
 
-### Arquitectura de memoria dual
+### Arquitectura de memoria dual (v0.7.0 + plugin)
 
-Hermes usa dos sistemas de memoria que se complementan:
+Hermes v0.7.0 introduce un sistema de memory providers pluggables. Nuestra implementación usa:
 
-#### 1. Memoria Nativa (archivos planos)
+#### 1. Builtin Memory Provider (siempre activo)
 
-Archivos que se cargan automáticamente en cada sesión via `MemoryStore.load_from_disk()`:
+Archivos planos que se cargan via `MemoryStore.load_from_disk()`:
 
 - `~/.hermes/memories/MEMORY.md` — notas de trabajo del agente
 - `~/.hermes/memories/USER.md` — perfil del usuario
 
-Se leen al inicio de cada sesión (nueva o existente). Son estáticos hasta que se actualizan.
+#### 2. Personal AI Memory Provider Plugin (v1.0.0)
 
-#### 2. Personal AI MCP (memoria persistente)
+Plugin nativo en `plugins/memory/personal-ai/`. Integra el MCP personal-ai v5 (Mem0-backed) como provider de primera clase.
 
-Mem0-backed, cargado via hook `session:reset`/`session:start`:
+- **SSOT**: personal-ai MCP — sin escritura intermedia a MEMORY.md
+- **7 tools expuestas** al modelo: search, memories_manage, briefing_generate, ledger_*, browser_activity_query
+- **Lifecycle nativo**: initialize/prefetch/sync_turn llamados por MemoryManager
+- **Cache TTL**: 120s en prefetch para evitar llamadas redundantes
 
-- **memories know** — hechos persistentes sobre Diego
-- **memories policy** — reglas operativas
-
-Un hook en `~/.hermes/hooks/personal-ai-memory-loader/` hace llamado SSE al MCP bridge y escribe los resultados en MEMORY.md, que luego carga `MemoryStore`.
-
-**Flujo:**
+**Flujo (v0.7.0 + plugin):**
 ```
-/new → session:reset → hook ejecuta → SSE a personal-ai →
-MEMORY.md actualizado → AIAgent.__init__ → MemoryStore.load_from_disk →
-agente tiene memories disponibles
+AIAgent.__init__
+    → MemoryManager.add_provider(BuiltinMemoryProvider)
+    → MemoryManager.add_provider(PersonalAIMemoryProvider)
+    → initialize() → SSE connect a personal-ai MCP
+    → prefetch() → recall semántico (cached)
+    → get_tool_schemas() → 7 tools disponibles al modelo
 ```
 
-### Hook del sistema de memorias
+**Config:**
+```yaml
+# ~/.hermes/config.yaml
+memory:
+  provider: personal-ai
+  provider_settings:
+    personal_ai:
+      cache_ttl: 120
+```
+
+**Plugin estructura:**
+```
+plugins/memory/personal-ai/
+├── __init__.py      # PersonalAIMemoryProvider + PersonalAIClient
+├── plugin.yaml      # Metadata, pip_dependencies
+└── README.md        # Documentación completa
+```
+
+### Hook legacy (deprecado — mantener temporalmente)
 
 ```
 ~/.hermes/hooks/personal-ai-memory-loader/
-├── HOOK.yaml       # eventos + credenciales (NO hardcodear aquí)
-└── handler.py      # lógica de carga via SSE
+├── HOOK.yaml       # eventos + credenciales
+└── handler.py      # lógica legacy via SSE
 ```
 
-El hook escucha `session:start` (sesiones nuevas) y `session:reset` (`/new`).
+Una vez el plugin verificado funcional, remover este hook y limpiar la sección `<!-- PERSONAL-AI-INJECT -->` de MEMORY.md.
+
+### Tipos de memoria personal-ai
+
+| Tipo | Descripción |
+|------|-------------|
+| `know` | Hechos persistentes sobre Diego (preferencias, proyectos, personas) |
+| `policy` | Reglas operativas (ej: "Diego prefiere español, sin markdown") |
+| `episodic` | Eventos pasados (ej: "Grupos focales completados 2-3 abr 2026") |
 
 ---
 
@@ -261,7 +288,7 @@ systemctl --user restart hermes-gateway
 3. **delegate_task**: NO usar para research — truncó resultados a ~500 chars. Usar `terminal` + Python para llamadas OpenRouter.
 4. **execute_code**: no confiable para APIs externas por timeouts de 30s. Preferir `terminal`.
 5. **Brave API**: necesita plan "Data for Search" (no "Data for AI"). Keys `BSA*` del plan AI no funcionan.
-6. **Memoria personal-ai**: se carga via hook en `session:reset`/`session:start`. El hook necesita las variables `PERSONAL_AI_BASE_URL`, `PERSONAL_AI_API_KEY` y `PERSONAL_AI_REMOTE_URL` en su `HOOK.yaml` (env section).
+6. **Memoria personal-ai**: ahora es un plugin nativo v0.7.0 (`plugins/memory/personal-ai/`). El hook legacy en `hooks/personal-ai-memory-loader/` está deprecado pero se mantiene temporalmente como fallback. Actualizar config.yaml con `memory.provider: personal-ai` para activar.
 
 ---
 
@@ -273,6 +300,11 @@ dotfiles-hermes-agent/
 │   ├── config.yaml           # Config principal (sin secrets)
 │   ├── .env.example          # Template de variables
 │   └── gateway_*.json        # Estado de canales
+├── hooks/
+│   └── personal-ai-memory-loader/  # DEPRECADO: legacy hook (por remover post-verificación)
+├── plugins/
+│   └── memory/
+│       └── personal-ai/      # Plugin memory provider v1.0.0
 ├── skills/                   # Todos los skills instalados
 ├── scripts/
 │   └── backup.sh            # Backup idempotente

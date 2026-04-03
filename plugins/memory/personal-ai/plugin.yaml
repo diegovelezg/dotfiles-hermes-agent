@@ -1,0 +1,28 @@
+name: personal-ai
+version: "1.0.0"
+description: Personal AI memory provider — integrates Diego's custom personal-ai MCP (Mem0-backed) as a first-class memory plugin for Hermes Agent v0.7+.
+provider: memory
+author: Diego Vélez
+homepage: https://github.com/diegovelez/hermes-personal-ai
+
+# Memory provider type — single external allowed alongside builtin
+type: memory
+
+# pip dependencies this plugin needs (installed automatically on setup)
+pip_dependencies:
+  - httpx
+
+# No native config file — uses only environment variables:
+#   PERSONAL_AI_BASE_URL, PERSONAL_AI_API_KEY, PERSONAL_AI_REMOTE_URL
+# These are set in ~/.hermes/.env (same as before)
+# No save_config() override needed.
+
+config_fields:
+  - key: user_id
+    description: Platform user ID for this memory provider (Telegram user ID)
+    default: "1093162286"
+    required: false
+  - key: memory_types
+    description: "Comma-separated memory types to load: know,policy,episodic"
+    default: "know,policy,episodic"
+    required: false
