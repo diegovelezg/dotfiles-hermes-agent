@@ -153,11 +153,14 @@ mcp_servers:
     provider: auto
     timeout: 30
   personal-ai:
-    connect_timeout: 60
-    headers:
-      x-api-key: REoOdTWXA0OydZSmeuqx21DWKq8pop7d
+    command: /root/.hermes/hermes-agent/venv/bin/python3
+    args: [/root/.hermes/skills/mcp/personal-ai-bridge/mcp_server.py]
+    env:
+      PERSONAL_AI_REMOTE_URL: https://uaimcp.papelitosdecolor.com/sse
+      PERSONAL_AI_BASE_URL: https://uaimcp.papelitosdecolor.com
+      PERSONAL_AI_API_KEY: REoOdTWXA0OydZSmeuqx21DWKq8pop7d
     timeout: 120
-    url: https://uaimcp.papelitosdecolor.com/sse
+    connect_timeout: 60
 memory:
   flush_min_turns: 6
   memory_char_limit: 2200
