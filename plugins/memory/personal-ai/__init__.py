@@ -3,18 +3,25 @@ PersonalAI Memory Provider Plugin — integrates Diego's custom personal-ai MCP
 (Mem0-backed) as a first-class memory plugin for Hermes Agent v0.7+.
 
 Architecture:
-  - SSE bridge to personal-ai MCP v5 (same protocol as the old hook)
+  - SSE bridge to personal-ai MCP v5 using official MCP Python SDK (sse_client)
   - PersonalAIMemoryProvider subclasses MemoryProvider ABC
   - MemoryManager orchestrates builtin (MEMORY.md/USER.md) + this provider
-  - Only ONE external provider allowed — this replaces the hook entirely
 
 Tools exposed:
-  - personal_ai_search     : semantic search over know/policy/episodic memories
-  - personal_ai_memories_manage : create/update/deprecate memories
-  - personal_ai_briefing_generate : generate daily briefing from ledger + memories
-  - personal_ai_ledger_*    : ledger operations (query, create, bulk_action)
+  Memory:
+    - personal_ai_memories_search : semantic search over know/policy/episodic memories
+    - personal_ai_memories_manage : create/update/deprecate memories
+  Ledger:
+    - ledger_query : query ledger items
+    - ledger_item_create : create a ledger item
+    - ledger_bulk_action : bulk update/archive ledger items
+  Briefing:
+    - briefing_generate : generate structured briefing from ledger
+  Browser Activity:
+    - browser_activity_add : log browser activity
+    - browser_activity_query : query browser activity history
 
-Config (env vars, same as before):
+Config (env vars or config.yaml mcp_servers.personal-ai):
   PERSONAL_AI_BASE_URL    : MCP server base URL
   PERSONAL_AI_API_KEY    : API key
   PERSONAL_AI_REMOTE_URL : SSE endpoint (default: <BASE_URL>/sse)
@@ -32,12 +39,12 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Tool schemas
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
-SEARCH_SCHEMA = {
-    "name": "personal_ai_search",
+MEMORIES_SEARCH_SCHEMA = {
+    "name": "personal_ai_memories_search",
     "description": (
         "Search Diego's personal memories (know, policy, episodic) using "
         "semantic search. Returns facts, preferences, rules, and past events "
@@ -54,8 +61,8 @@ SEARCH_SCHEMA = {
             },
             "memory_type": {
                 "type": "string",
-                "enum": ["know", "policy", "episodic", "all"],
-                "description": "Type of memory to search (default: all).",
+                "enum": ["know", "policy", "episodic", "know_and_policy", "all"],
+                "description": "Type of memory to search. Use 'episodic' or 'know_and_policy' for targeted searches (default: all).",
                 "default": "all",
             },
             "limit": {
@@ -108,184 +115,116 @@ MEMORIES_MANAGE_SCHEMA = {
     },
 }
 
-BRIEFING_SCHEMA = {
-    "name": "personal_ai_briefing_generate",
-    "description": (
-        "Generate a daily briefing for Diego based on ledger action items, "
-        "active memories, and recent episodic events. Returns a structured "
-        "overview of what needs attention today."
-    ),
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "timezone": {
-                "type": "string",
-                "description": "Timezone for the briefing (default: America/Lima).",
-                "default": "America/Lima",
-            },
-        },
-        "properties": {},
-    },
-}
+# ---------------------------------------------------------------------------
+# Ledger + Briefing + Browser Activity tool schemas
+# ---------------------------------------------------------------------------
 
 LEDGER_QUERY_SCHEMA = {
-    "name": "personal_ai_ledger_query",
-    "description": (
-        "Query the action/intel ledger — search for tasks, notes, or "
-        "information items. Returns matching items with their status, "
-        "priority, and metadata."
-    ),
+    "name": "ledger_query",
+    "description": "Query ledger items from personal-ai. Returns matching items with relevance scores.",
     "parameters": {
         "type": "object",
         "properties": {
-            "query": {
-                "type": "string",
-                "description": "Natural language search query.",
-            },
-            "status": {
-                "type": "string",
-                "description": "Filter by status (inbox, todo, doing, review, done, etc.).",
-            },
-            "nature": {
-                "type": "string",
-                "enum": ["action", "intel", "all"],
-                "description": "Filter by nature (default: all).",
-                "default": "all",
-            },
-            "limit": {
-                "type": "integer",
-                "description": "Max results (default: 50).",
-                "default": 50,
-            },
+            "query": {"type": "string", "description": "Natural language query."},
+            "limit": {"type": "integer", "default": 10, "description": "Max results (default: 10)."},
+            "status": {"type": "string", "description": "Filter by status (e.g. 'permanent', 'active')."},
+            "nature": {"type": "string", "description": "Filter by nature (e.g. 'intel', 'project', 'person')."},
         },
         "required": ["query"],
     },
 }
 
-LEDGER_CREATE_SCHEMA = {
-    "name": "personal_ai_ledger_item_create",
-    "description": (
-        "Create a new ledger item — an action task or intel note. "
-        "Use for tracking todos, projects, or information Diego wants to retain."
-    ),
+LEDGER_ITEM_CREATE_SCHEMA = {
+    "name": "ledger_item_create",
+    "description": "Create a ledger item in personal-ai (note, task, project, person, intel, etc).",
     "parameters": {
         "type": "object",
         "properties": {
-            "title": {
-                "type": "string",
-                "description": "Title of the item.",
-            },
-            "nature": {
-                "type": "string",
-                "enum": ["action", "intel"],
-                "description": "Nature: action=task, intel=information.",
-            },
-            "status": {
-                "type": "string",
-                "enum": ["inbox", "todo", "doing", "review", "done", "dismissed", "archived", "permanent"],
-                "description": "Initial status (default: inbox for actions, permanent for intel).",
-            },
-            "content": {
-                "type": "string",
-                "description": "Description or content.",
-            },
-            "subject": {
-                "type": "string",
-                "description": "Subject/topic.",
-            },
-            "priority": {
-                "type": "string",
-                "enum": ["low", "medium", "high", "urgent"],
-                "description": "Priority (default: medium).",
-                "default": "medium",
-            },
-            "due_at": {
-                "type": "string",
-                "description": "Due date (ISO 8601).",
-            },
+            "title": {"type": "string", "description": "Item title."},
+            "content": {"type": "string", "description": "Optional detailed content/description."},
+            "nature": {"type": "string", "enum": ["action", "intel"], "default": "action", "description": "Type: 'action' (tasks/projects) or 'intel' (notes/info). Intel must have status='permanent'."},
+            "status": {"type": "string", "description": "Status: permanent (intel), active (action). Intel nature requires permanent."},
+            "subject": {"type": "string", "description": "Subject/tag (e.g. @proyecto, @persona)."},
+            "priority": {"type": "string", "description": "Priority: low, medium, high, urgent."},
+            "due_at": {"type": "string", "description": "Due date (ISO format)."},
         },
         "required": ["title", "nature"],
     },
 }
 
-LEDGER_BULK_SCHEMA = {
-    "name": "personal_ai_ledger_bulk_action",
-    "description": (
-        "Bulk update multiple ledger items at once — change status, priority, "
-        "add notes, or reassign. Supply a list of item IDs."
-    ),
+LEDGER_BULK_ACTION_SCHEMA = {
+    "name": "ledger_bulk_action",
+    "description": "Bulk update or archive multiple ledger items by ID. IDs come from ledger_query results.",
     "parameters": {
         "type": "object",
         "properties": {
-            "ids": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "List of ledger item IDs.",
-            },
-            "status": {
-                "type": "string",
-                "enum": ["inbox", "todo", "doing", "review", "done", "dismissed", "archived", "permanent"],
-                "description": "New status.",
-            },
-            "priority": {
-                "type": "string",
-                "enum": ["low", "medium", "high", "urgent"],
-                "description": "New priority.",
-            },
-            "note": {
-                "type": "string",
-                "description": "Note to add to all items.",
-            },
+            "ids": {"type": "array", "items": {"type": "string"}, "description": "List of ledger item IDs (from ledger_query)."},
+            "note": {"type": "string", "description": "Note/reason for the action."},
+            "status": {"type": "string", "description": "New status: active, archived, etc."},
+            "priority": {"type": "string", "description": "New priority to set."},
         },
         "required": ["ids", "note"],
     },
 }
 
-BROWSER_ACTIVITY_QUERY_SCHEMA = {
-    "name": "personal_ai_browser_activity_query",
-    "description": (
-        "Query Diego's browser activity history — websites visited, time spent, "
-        "and page content summaries. Hybrid search (exact + semantic)."
-    ),
+BRIEFING_GENERATE_SCHEMA = {
+    "name": "briefing_generate",
+    "description": "Generate a structured briefing from ledger items matching a query.",
     "parameters": {
         "type": "object",
         "properties": {
-            "query": {
-                "type": "string",
-                "description": "Search terms for the summary (semantic).",
-            },
-            "site": {
-                "type": "string",
-                "description": "Filter by site (e.g. 'github.com').",
-            },
-            "limit": {
-                "type": "integer",
-                "description": "Max results (default: 10).",
-                "default": 10,
-            },
-            "match_threshold": {
-                "type": "number",
-                "description": "Similarity threshold 0-1 (default: 0.5).",
-                "default": 0.5,
-            },
+            "query": {"type": "string", "description": "Query to select relevant ledger items."},
+            "format": {"type": "string", "default": "text", "description": "Format: text, markdown, html."},
+            "max_items": {"type": "integer", "default": 20, "description": "Max ledger items to include."},
+        },
+        "required": ["query"],
+    },
+}
+
+BROWSER_ACTIVITY_ADD_SCHEMA = {
+    "name": "browser_activity_add",
+    "description": "Log a browser activity (URL, title, action) to personal-ai.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "url": {"type": "string", "description": "URL of the page."},
+            "title": {"type": "string", "description": "Page title."},
+            "summary": {"type": "string", "description": "Brief summary of the activity (required for vectorization)."},
+            "action": {"type": "string", "default": "visit", "description": "Action: visit, search, click, submit, scroll."},
+            "site": {"type": "string", "description": "Site/domain name."},
+        },
+        "required": ["url", "summary"],
+    },
+}
+
+BROWSER_ACTIVITY_QUERY_SCHEMA = {
+    "name": "browser_activity_query",
+    "description": "Query browser activity history from personal-ai.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "Search query."},
+            "site": {"type": "string", "description": "Filter by site/domain."},
+            "limit": {"type": "integer", "default": 10, "description": "Max results."},
+            "match_threshold": {"type": "number", "default": 0.5, "description": "Relevance threshold (0-1)."},
         },
         "required": ["query"],
     },
 }
 
 
-# -----------------------------------------------------------------------
-# PersonalAI MCP client (SSE bridge protocol)
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# PersonalAI MCP client — official SDK (sse_client + ClientSession)
+# ---------------------------------------------------------------------------
 
 class PersonalAIClient:
     """
-    SSE+MCP bridge client for personal-ai MCP v5.
+    SSE+MCP bridge client using the official MCP Python SDK.
 
-    Protocol:
-      1. GET /sse → receives session_id in SSE data (keeps connection open)
-      2. POST /messages?sessionId=... → sends JSON-RPC on same keep-alive connection
-      3. Response arrives as SSE data events on the open GET connection
+    Protocol (handled automatically by sse_client):
+      1. sse_client opens GET /sse → receives session_id in endpoint event
+      2. ClientSession.initialize() completes the MCP handshake
+      3. session.call_tool() sends JSON-RPC via POST, reads response from SSE stream
     """
 
     def __init__(
@@ -295,20 +234,44 @@ class PersonalAIClient:
         remote_url: str | None = None,
         user_id: str | None = None,
     ):
-        self.base_url = (base_url or os.environ.get(
-            "PERSONAL_AI_BASE_URL", "https://uaimcp.papelitosdecolor.com"
-        ))
-        self.api_key = api_key or os.environ.get("PERSONAL_AI_API_KEY", "")
-        self.remote_url = (
+        # Load config from env or config.yaml
+        _cfg_base_url: str | None = None
+        _cfg_api_key: str | None = None
+        _cfg_remote_url: str | None = None
+        try:
+            from hermes_cli.config import load_config
+            mcp_cfg = load_config().get("mcp_servers", {}).get("personal-ai", {})
+            env_cfg = mcp_cfg.get("env", {})
+            _cfg_base_url = env_cfg.get("PERSONAL_AI_BASE_URL")
+            _cfg_api_key = env_cfg.get("PERSONAL_AI_API_KEY")
+            _cfg_remote_url = env_cfg.get("PERSONAL_AI_REMOTE_URL")
+        except Exception:
+            pass
+
+        self.base_url: str = (
+            base_url
+            or _cfg_base_url
+            or os.environ.get("PERSONAL_AI_BASE_URL")
+            or "https://uaimcp.papelitosdecolor.com"
+        )
+        self.api_key: str = (
+            api_key
+            or _cfg_api_key
+            or os.environ.get("PERSONAL_AI_API_KEY")
+            or ""
+        )
+        self.remote_url: str = (
             remote_url
+            or _cfg_remote_url
             or os.environ.get("PERSONAL_AI_REMOTE_URL")
             or f"{self.base_url}/sse"
         )
-        self.user_id = user_id or os.environ.get("PERSONAL_AI_USER_ID", "1093162286")
+        self.user_id: str = user_id or os.environ.get("PERSONAL_AI_USER_ID", "1093162286")
 
-        self._session_id: str | None = None
+        self._session: Any = None  # ClientSession (set in connect)
         self._lock = threading.Lock()
-        self._http: Any = None  # set in connect()
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._closed = False
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -318,120 +281,74 @@ class PersonalAIClient:
         }
 
     def is_available(self) -> bool:
-        """Check env vars are set — no network call."""
+        """Check credentials are set — no network call."""
         return bool(self.base_url and self.api_key)
 
     def connect(self) -> None:
-        """Establish SSE connection and get session_id."""
-        import httpx
+        """Mark session as needing initialization. Actual connection is lazy on first call."""
         with self._lock:
-            if self._http is not None:
-                return
-            self._http = httpx.AsyncClient(verify=False, timeout=30.0)
-            self._session_id = None
+            self._closed = False
 
-            # Start background reader to get session_id
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            # Run synchronously for initialize()
-            async def get_session():
-                session_id = None
-                async with self._http.stream("GET", self.remote_url, headers=self._headers()) as resp:
-                    resp.raise_for_status()
-                    async for line in resp.aiter_lines():
-                        if "sessionId=" in line:
-                            session_id = line.split("sessionId=")[1].split()[0].strip()
-                            break
-                return session_id
-
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            self._session_id = loop.run_until_complete(get_session())
-
-    def _ensure_session(self) -> str:
-        if not self._session_id:
+    def _ensure_session(self):
+        if self._closed:
             self.connect()
-        return self._session_id or ""
+        return self._session
 
-    def _post_and_wait(self, method: str, params: dict, timeout: float = 15.0) -> dict | None:
-        """POST a JSON-RPC request and wait for SSE response."""
+    def _call_tool_sync(self, tool_name: str, arguments: dict, timeout: float = 15.0) -> dict | None:
+        """Call a tool synchronously using the shared session."""
+        import asyncio
         import httpx
-        if self._http is None:
-            self.connect()
+        from mcp.client.sse import sse_client
+        from mcp import ClientSession
 
-        session_id = self._ensure_session()
-        msg_url = f"{self.base_url}/messages?sessionId={session_id}"
-        payload = {
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params,
-            "id": f"pai-{int(time.time()*1000)}",
-        }
+        result_container: list = [None]
+        error_container: list = [None]
 
-        # Use a fresh client for the POST to avoid connection issues
-        with self._lock:
+        async def _call():
             try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+                # Use a fresh SSE connection per call (session-less protocol)
+                def http_factory(**kw) -> httpx.AsyncClient:
+                    kw.pop("timeout", None)  # avoid duplicate timeout
+                    return httpx.AsyncClient(verify=False, timeout=timeout, **kw)
 
-            results: list[dict] = []
+                async with sse_client(
+                    self.remote_url,
+                    httpx_client_factory=http_factory,
+                    headers={"x-api-key": self.api_key},
+                ) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        result = await session.call_tool(tool_name, arguments)
+                        # Extract text content from result
+                        if result and hasattr(result, 'content') and result.content:
+                            text = result.content[0].text if hasattr(result.content[0], 'text') else str(result.content[0])
+                            data = json.loads(text)
+                            result_container[0] = data
+                        else:
+                            result_container[0] = {"status": "success", "data": None}
+            except Exception as e:
+                error_container[0] = e
+                logger.error("[personal-ai] call_tool %s error: %s", tool_name, e)
 
-            async def do_post():
-                # Reconnect SSE for this response
-                client = httpx.AsyncClient(verify=False, timeout=timeout)
-                sse_session = None
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-                async def sse_reader():
-                    nonlocal sse_session
-                    async with client.stream("GET", self.remote_url, headers=self._headers()) as resp:
-                        resp.raise_for_status()
-                        async for line in resp.aiter_lines():
-                            if "sessionId=" in line and not sse_session:
-                                sse_session = line.split("sessionId=")[1].split()[0].strip()
-                            elif line.startswith("data:") and line[5:].strip().startswith("{"):
-                                try:
-                                    results.append(json.loads(line[5:].strip()))
-                                except json.JSONDecodeError:
-                                    pass
+        timeout_thread = threading.Thread(target=lambda: loop.run_until_complete(_call()), daemon=True)
+        timeout_thread.start()
+        timeout_thread.join(timeout=timeout)
 
-                reader_task = asyncio.create_task(sse_reader())
-                await asyncio.sleep(0.3)  # let reader start
+        if error_container[0]:
+            raise error_container[0]
+        return result_container[0]
 
-                post_resp = await client.post(msg_url, json=payload, headers=self._headers())
-                post_resp.raise_for_status()
+    def call_tool(self, tool_name: str, arguments: dict, timeout: float = 20.0) -> dict | None:
+        """Public method: call any MCP tool directly. Used for ledger, briefing, browser_activity."""
+        return self._call_tool_sync(tool_name, arguments, timeout)
 
-                # Wait up to timeout for result
-                deadline = time.time() + timeout
-                while time.time() < deadline:
-                    if any("result" in r or "error" in r for r in results):
-                        break
-                    await asyncio.sleep(0.1)
-
-                reader_task.cancel()
-                try:
-                    await asyncio.shield(reader_task)
-                except (asyncio.CancelledError, BaseException):
-                    pass
-                await client.aclose()
-
-            loop.run_until_complete(do_post())
-
-            for msg in results:
-                if "result" in msg:
-                    return msg["result"]
-            return None
-
-    # ---- High-level API ----
+    # ---- High-level API (search/manage) ----
 
     def search_memories(
         self,
@@ -440,9 +357,14 @@ class PersonalAIClient:
         limit: int = 10,
     ) -> List[Dict[str, Any]]:
         """Semantic search over memories."""
-        types = ["know", "policy", "episodic"] if memory_type == "all" else [memory_type]
-        all_results = []
+        if memory_type == "all":
+            types = ["know", "policy", "episodic"]
+        elif memory_type == "know_and_policy":
+            types = ["know", "policy"]
+        else:
+            types = [memory_type]
 
+        all_results = []
         for mtype in types:
             params = {
                 "query": query,
@@ -451,18 +373,14 @@ class PersonalAIClient:
                 "user_id": self.user_id,
                 "limit": str(min(limit, 50)),
             }
-            result = self._post_and_wait("tools/call", {
-                "name": "memories_search",
-                "arguments": params,
-            })
-            if result:
-                content = result.get("content", [])
-                if content and isinstance(content[0], dict):
-                    inner_text = content[0].get("text", "{}")
-                    inner = json.loads(inner_text)
-                    items = inner.get("data", {}).get("memories", [])
+            try:
+                result = self._call_tool_sync("memories_search", params)
+                if result:
+                    data = result.get("data", {})
+                    items = data.get("memories", []) if isinstance(data, dict) else []
                     all_results.extend(items)
-
+            except Exception as e:
+                logger.warning("[personal-ai] search_memories(%s) error: %s", mtype, e)
         return all_results
 
     def manage_memory(
@@ -493,149 +411,23 @@ class PersonalAIClient:
             "deprecate": ("memory_manage", params),
         }
         method, final_params = method_map.get(action, ("memory_manage", params))
-        return self._post_and_wait("tools/call", {"name": method, "arguments": final_params})
-
-    def generate_briefing(self, timezone: str = "America/Lima") -> str:
-        """Generate daily briefing."""
-        result = self._post_and_wait("tools/call", {
-            "name": "briefing_generate",
-            "arguments": {"timezone": timezone},
-        })
-        if result:
-            content = result.get("content", [])
-            if content and isinstance(content[0], dict):
-                return content[0].get("text", "")
-        return ""
-
-    def ledger_query(
-        self,
-        query: str,
-        status: str | None = None,
-        nature: str = "all",
-        limit: int = 50,
-    ) -> List[Dict[str, Any]]:
-        """Query ledger items."""
-        params: dict[str, Any] = {
-            "query": query,
-            "limit": str(limit),
-        }
-        if status:
-            params["status"] = status
-        if nature != "all":
-            params["nature"] = nature
-
-        result = self._post_and_wait("tools/call", {
-            "name": "ledger_query",
-            "arguments": params,
-        })
-        if result:
-            content = result.get("content", [])
-            if content and isinstance(content[0], dict):
-                inner_text = content[0].get("text", "{}")
-                inner = json.loads(inner_text)
-                return inner.get("data", {}).get("items", [])
-        return []
-
-    def ledger_create(
-        self,
-        title: str,
-        nature: str,
-        status: str | None = None,
-        content: str | None = None,
-        subject: str | None = None,
-        priority: str = "medium",
-        due_at: str | None = None,
-        **kwargs,
-    ) -> dict | None:
-        """Create a ledger item."""
-        params: dict[str, Any] = {
-            "title": title,
-            "nature": nature,
-            **kwargs,
-        }
-        if status:
-            params["status"] = status
-        if content:
-            params["content"] = content
-        if subject:
-            params["subject"] = subject
-        if priority:
-            params["priority"] = priority
-        if due_at:
-            params["due_at"] = due_at
-
-        return self._post_and_wait("tools/call", {
-            "name": "ledger_item_create",
-            "arguments": params,
-        })
-
-    def ledger_bulk_action(
-        self,
-        ids: List[str],
-        note: str,
-        status: str | None = None,
-        priority: str | None = None,
-    ) -> dict | None:
-        """Bulk update ledger items."""
-        params: dict[str, Any] = {
-            "ids": ids,
-            "note": note,
-        }
-        if status:
-            params["status"] = status
-        if priority:
-            params["priority"] = priority
-
-        return self._post_and_wait("tools/call", {
-            "name": "ledger_bulk_action",
-            "arguments": params,
-        })
-
-    def browser_activity_query(
-        self,
-        query: str,
-        site: str | None = None,
-        limit: int = 10,
-        match_threshold: float = 0.5,
-    ) -> List[Dict[str, Any]]:
-        """Query browser activity."""
-        params: dict[str, Any] = {
-            "query": query,
-            "limit": str(limit),
-            "match_threshold": str(match_threshold),
-        }
-        if site:
-            params["site"] = site
-
-        result = self._post_and_wait("tools/call", {
-            "name": "browser_activity_query",
-            "arguments": params,
-        })
-        if result:
-            content = result.get("content", [])
-            if content and isinstance(content[0], dict):
-                inner_text = content[0].get("text", "{}")
-                inner = json.loads(inner_text)
-                return inner.get("data", {}).get("activities", [])
-        return []
+        try:
+            return self._call_tool_sync(method, final_params)
+        except Exception as e:
+            logger.error("[personal-ai] manage_memory error: %s", e)
+            return None
 
     def close(self) -> None:
         """Clean shutdown."""
         with self._lock:
-            if self._http is not None:
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                loop.run_until_complete(self._http.aclose())
-                self._http = None
-                self._session_id = None
+            self._closed = True
+            self._session = None
+            self._loop = None
 
 
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # PersonalAI Memory Provider
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 class PersonalAIMemoryProvider:
     """
@@ -676,13 +468,19 @@ class PersonalAIMemoryProvider:
     # -- Availability -------------------------------------------------------
 
     def is_available(self) -> bool:
-        env_vars = os.environ.get("PERSONAL_AI_API_KEY") and os.environ.get("PERSONAL_AI_BASE_URL")
-        # Also check if the plugin version of the client can be reached
+        """Check if credentials are available via env vars or config.yaml MCP server section."""
+        if os.environ.get("PERSONAL_AI_API_KEY") and os.environ.get("PERSONAL_AI_BASE_URL"):
+            return True
         try:
-            client = PersonalAIClient()
-            return client.is_available()
+            from hermes_cli.config import load_config
+            config = load_config()
+            mcp_cfg = config.get("mcp_servers", {}).get("personal-ai", {})
+            env_cfg = mcp_cfg.get("env", {})
+            if env_cfg.get("PERSONAL_AI_API_KEY") and env_cfg.get("PERSONAL_AI_BASE_URL"):
+                return True
         except Exception:
-            return bool(env_vars)
+            pass
+        return False
 
     # -- Core lifecycle ------------------------------------------------------
 
@@ -710,16 +508,10 @@ class PersonalAIMemoryProvider:
             session_id, platform, agent_context, agent_identity,
         )
 
-        # Use user_id from kwargs if available (set by gateway)
         if user_id:
             self._user_id = user_id
-        elif agent_identity:
-            # Fallback: use agent_identity as identifier
-            pass
 
-        # For non-primary contexts (cron), skip writes but allow reads
         self._skip_writes = agent_context in ("cron", "flush")
-
         self._session_id = session_id
         self._client = PersonalAIClient(user_id=self._user_id)
         self._client.connect()
@@ -742,12 +534,13 @@ Diego has a custom personal AI memory system (personal-ai MCP v5, Mem0-backed) w
 - **policy**: operational rules Diego has set
 - **episodic**: past events and experiences
 
+**Load strategy:**
+- At session start: know + policy (status: active) are preloaded — these are the stable user model
+- On demand: episodic and historical memories are retrieved via personal_ai_memories_search when relevant
+
 You have tools to query and manage these memories:
-- personal_ai_search — semantic search over all memory types
+- personal_ai_memories_search — semantic search (all types, on demand)
 - personal_ai_memories_manage — create/update/deprecate memories
-- personal_ai_briefing_generate — daily briefing from ledger + memories
-- personal_ai_ledger_query / personal_ai_ledger_item_create / personal_ai_ledger_bulk_action
-- personal_ai_browser_activity_query — browser history
 
 **When to use**: At the start of a session and whenever Diego asks about something from his past,
 preferences, projects, or people in his life. Act proactively — don't wait to be asked.
@@ -766,7 +559,6 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
         """
         now = time.time()
 
-        # Check cache
         if (
             self._cached_prefetch is not None
             and (now - self._cached_prefetch[1]) < self.CACHE_TTL
@@ -778,29 +570,26 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
             return ""
 
         try:
-            # Fetch recent "state of Diego" — profile + recent episodic + urgent actions
+            core_results = self._client.search_memories(
+                "Diego preferences projects people environment habits",
+                memory_type="know_and_policy",
+                limit=20,
+            )
             results: list[str] = []
-
-            # Quick profile
-            know_results = self._client.search_memories("Diego preferences projects current", memory_type="know", limit=5)
-            for item in know_results:
+            for item in core_results:
                 c = item.get("content", "")
-                if c:
-                    results.append(f"[know] {c}")
-
-            # Recent episodic
-            episodic_results = self._client.search_memories("", memory_type="episodic", limit=5)
-            for item in episodic_results:
-                c = item.get("content", "")
-                if c:
-                    results.append(f"[episodic] {c}")
+                mtype = item.get("type", "know")
+                # Filter out known ghost/test memories that exist in Mem0 but
+                # cannot be managed via memory_manage due to an MCP server bug
+                # where search IDs don't resolve in Mem0's update/delete API.
+                if c and "SDK rewrite" not in c:
+                    results.append(f"[{mtype}] {c}")
 
             if results:
                 block = "## Recent Personal Context\n" + "\n".join(f"- {r}" for r in results)
             else:
                 block = ""
 
-            # Update cache
             self._cached_prefetch = (block, now)
             return block
 
@@ -809,14 +598,7 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
             return ""
 
     def queue_prefetch(self, query: str, *, session_id: str = "") -> None:
-        """
-        Queue a background recall for the NEXT turn.
-
-        Called after each turn. We invalidate the cache so the next
-        prefetch() fetches fresh data. Actual implementation fires a
-        thread to do the fetch and update _cached_prefetch.
-        """
-        # Invalidate cache — next prefetch() will do fresh fetch
+        """Invalidate cache so next prefetch() fetches fresh data."""
         self._cached_prefetch = None
 
     # -- Per-turn sync ------------------------------------------------------
@@ -824,15 +606,7 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
     def sync_turn(self, user_content: str, assistant_content: str, *, session_id: str = "") -> None:
         """
         Skip per-turn sync — personal-ai uses explicit memory_manage calls.
-
-        The old hook wrote to MEMORY.md on every session start, but the plugin
-        model prefers explicit saves (personal_ai_memories_manage tool) so
-        Diego controls what gets remembered vs. what is ephemeral context.
-
-        This hook is kept for potential future automatic extraction
-        (e.g., on_session_end pattern).
         """
-        # No automatic per-turn writes — let Diego decide what to remember
         pass
 
     # -- Tools --------------------------------------------------------------
@@ -840,12 +614,13 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
     def get_tool_schemas(self) -> List[Dict[str, Any]]:
         """Return all personal-ai tools."""
         return [
-            SEARCH_SCHEMA,
+            MEMORIES_SEARCH_SCHEMA,
             MEMORIES_MANAGE_SCHEMA,
-            BRIEFING_SCHEMA,
             LEDGER_QUERY_SCHEMA,
-            LEDGER_CREATE_SCHEMA,
-            LEDGER_BULK_SCHEMA,
+            LEDGER_ITEM_CREATE_SCHEMA,
+            LEDGER_BULK_ACTION_SCHEMA,
+            BRIEFING_GENERATE_SCHEMA,
+            BROWSER_ACTIVITY_ADD_SCHEMA,
             BROWSER_ACTIVITY_QUERY_SCHEMA,
         ]
 
@@ -855,12 +630,16 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
             return json.dumps({"error": "personal-ai not initialized"})
 
         try:
-            if tool_name == "personal_ai_search":
+            # Memory tools — use typed client methods
+            if tool_name == "personal_ai_memories_search":
                 results = self._client.search_memories(
                     query=args.get("query", ""),
                     memory_type=args.get("memory_type", "all"),
                     limit=args.get("limit", 10),
                 )
+                # Filter ghost memories that exist in Mem0 but can't be managed
+                # via memory_manage due to an MCP server bug (search ID != Mem0 ID)
+                results = [r for r in results if "SDK rewrite" not in r.get("content", "")]
                 return json.dumps({"status": "success", "data": {"memories": results}})
 
             elif tool_name == "personal_ai_memories_manage":
@@ -873,54 +652,16 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
                     timezone=args.get("timezone", "America/Lima"),
                     user_id=args.get("user_id", self._user_id),
                 )
-                # Invalidate cache after writes
                 self._cached_prefetch = None
                 return json.dumps({"status": "success", "data": result})
 
-            elif tool_name == "personal_ai_briefing_generate":
-                text = self._client.generate_briefing(
-                    timezone=args.get("timezone", "America/Lima"),
-                )
-                return json.dumps({"status": "success", "data": {"briefing": text}})
-
-            elif tool_name == "personal_ai_ledger_query":
-                items = self._client.ledger_query(
-                    query=args.get("query", ""),
-                    status=args.get("status"),
-                    nature=args.get("nature", "all"),
-                    limit=args.get("limit", 50),
-                )
-                return json.dumps({"status": "success", "data": {"items": items}})
-
-            elif tool_name == "personal_ai_ledger_item_create":
-                result = self._client.ledger_create(
-                    title=args.get("title", ""),
-                    nature=args.get("nature", ""),
-                    status=args.get("status"),
-                    content=args.get("content"),
-                    subject=args.get("subject"),
-                    priority=args.get("priority", "medium"),
-                    due_at=args.get("due_at"),
-                )
+            # Ledger, briefing, browser — direct MCP call
+            elif tool_name in (
+                "ledger_query", "ledger_item_create", "ledger_bulk_action",
+                "briefing_generate", "browser_activity_add", "browser_activity_query",
+            ):
+                result = self._client.call_tool(tool_name, args)
                 return json.dumps({"status": "success", "data": result})
-
-            elif tool_name == "personal_ai_ledger_bulk_action":
-                result = self._client.ledger_bulk_action(
-                    ids=args.get("ids", []),
-                    note=args.get("note", ""),
-                    status=args.get("status"),
-                    priority=args.get("priority"),
-                )
-                return json.dumps({"status": "success", "data": result})
-
-            elif tool_name == "personal_ai_browser_activity_query":
-                activities = self._client.browser_activity_query(
-                    query=args.get("query", ""),
-                    site=args.get("site"),
-                    limit=args.get("limit", 10),
-                    match_threshold=args.get("match_threshold", 0.5),
-                )
-                return json.dumps({"status": "success", "data": {"activities": activities}})
 
             else:
                 return json.dumps({"error": f"Unknown tool: {tool_name}"})
@@ -944,18 +685,11 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
     ) -> None:
         """Track turns and periodically refresh cached context."""
         self._turn_count = turn_number
-
-        # Refresh cache every 10 turns
         if self._turn_count % 10 == 0:
             self._cached_prefetch = None
 
     def on_session_end(self, messages: List[Dict[str, Any]]) -> None:
-        """
-        End-of-session hook — not currently used.
-
-        Could implement automatic episodic memory creation from session summary
-        in a future iteration.
-        """
+        """End-of-session hook — not currently used."""
         pass
 
     # -- Config -------------------------------------------------------------
@@ -987,10 +721,10 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
         logger.info("[personal-ai] shutdown complete")
 
 
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # Plugin entry point (register hook)
-# -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
 def register() -> PersonalAIMemoryProvider:
-    """Entry point called by MemoryManager when loading plugins."""
+    """Plugin entry point — returns the provider instance."""
     return PersonalAIMemoryProvider()
