@@ -31,49 +31,49 @@ Usuario (Telegram / Discord)
 
 ---
 
-## Sistema de Memoria
+## Sistema de Memoria y Ledger
 
-### Arquitectura dual (v0.7.0)
+### Arquitectura de plugins (SSOT)
 
 ```
 MemoryManager
     ├── BuiltinMemoryProvider        ← MEMORY.md / USER.md (siempre activo)
     │                                    Memorias de trabajo y perfil de usuario
     │
-    └── PersonalAIMemoryProvider     ← Plugin (este repo)
+    └── PersonalAIMemoryProvider     ← Plugin memory/personal-ai
          │                              Conexión SSE → personal-ai MCP
          ├── prefetch()                 → recall semántico al inicio de sesión
          ├── system_prompt_block()      → instrucciones de tools en el prompt
-         ├── get_tool_schemas()         → 8 tools expuestas al modelo
+         ├── get_tool_schemas()         → 2 tools de memoria expuestas
          └── handle_tool_call()         → dispatch directo al MCP
+
+PersonalAILedgerProvider            ← Plugin personal-ai-ledger
+     │                                Conexión SSE → mismo MCP (SSOT)
+     ├── get_tool_schemas()         → 6 tools de ledger/briefing/browser
+     └── handle_tool_call()         → dispatch directo al MCP
 ```
 
-**SSOT de la memoria personal: personal-ai MCP** — el plugin escribe y lee directo, sin escritura intermedia a MEMORY.md.
+**SSOT:** Ambos plugins comparten una única conexión SSE al servidor MCP `uaimcp.papelitosdecolor.com`. No hay intermediarios (sin mcporter).
 
-### Plugin personal-ai MCP
+### Plugins personal-ai
 
-**Ubicación:** `plugins/memory/personal-ai/`
-
-**8 tools expuestas al modelo:**
+**Plugin memory (`plugins/memory/personal-ai/`)** — Solo tools de memoria:
 
 | Tool | Descripción |
 |------|-------------|
 | `personal_ai_memories_search` | Búsqueda semántica sobre know/policy/episodic |
 | `personal_ai_memories_manage` | Crear, actualizar, deprecar memorias |
+
+**Plugin ledger (`plugins/personal-ai-ledger/`)** — Solo tools de ledger/briefing/browser:
+
+| Tool | Descripción |
+|------|-------------|
 | `ledger_query` | Consultar items del ledger (action/intel) |
 | `ledger_item_create` | Crear item en el ledger |
 | `ledger_bulk_action` | Bulk update/archive de items del ledger |
-| `briefing_generate` | Generar briefing estructurado desde ledger + memorias |
+| `briefing_generate` | Generar briefing estructurado desde ledger |
 | `browser_activity_add` | Registrar actividad de navegación |
 | `browser_activity_query` | Consultar historial de navegación |
-
-**Tipos de memoria en Mem0:**
-
-| Tipo | Descripción | Ejemplo |
-|------|-------------|---------|
-| `know` | Hechos persistentes sobre Diego | proyectos, personas, preferencias |
-| `policy` | Reglas operativas | "Diego prefiere español, sin markdown en Telegram" |
-| `episodic` | Eventos pasados | "Grupos focales completados 2-3 abr 2026" |
 
 **Configuración del plugin** (variables en `~/.hermes/.env`):
 
@@ -104,7 +104,15 @@ El MCP server (`papelitosdecolor.com`) usa Server-Sent Events con sesión aislad
 - Heartbeats automáticos para mantener la conexión viva
 - Cada sesión tiene su propia instancia aislada del servidor MCP
 
-### Builtin Memory Provider
+### Memorias en Mem0 (personal-ai MCP)
+
+| Tipo | Descripción | Ejemplo |
+|------|-------------|---------|
+| `know` | Hechos persistentes sobre Diego | proyectos, personas, preferencias |
+| `policy` | Reglas operativas | "Diego prefiere español, sin markdown en Telegram" |
+| `episodic` | Eventos pasados | "Grupos focales completados 2-3 abr 2026" |
+
+### Protocolo SSE del personal-ai MCP
 
 Archivos planos en `~/.hermes/memories/`:
 
@@ -292,11 +300,14 @@ dotfiles-hermes-agent/
 │   ├── .env.example         # Template de variables
 │   └── gateway_*.json       # Estado de canales
 ├── plugins/
-│   └── memory/
-│       └── personal-ai/     # Plugin memory provider v1.0.0
-│           ├── __init__.py  # PersonalAIMemoryProvider + PersonalAIClient
-│           ├── plugin.yaml  # Metadata + pip_dependencies
-│           └── README.md    # Documentación del plugin
+│   ├── memory/
+│   │   └── personal-ai/     # Plugin memory — solo tools de memoria
+│   │       ├── __init__.py  # PersonalAIMemoryProvider + PersonalAIClient
+│   │       ├── plugin.yaml  # Metadata + pip_dependencies
+│   │       └── README.md    # Documentación del plugin
+│   └── personal-ai-ledger/   # Plugin ledger — tools de ledger/briefing/browser
+│       ├── __init__.py      # PersonalAILedgerProvider + PersonalAIClient
+│       └── plugin.yaml      # Metadata
 ├── skills/                  # 29 skills instalados
 ├── scripts/
 │   └── backup.sh            # Backup idempotente
@@ -322,7 +333,7 @@ dotfiles-hermes-agent/
 3. **delegate_task**: no usar para research — trunca resultados. Preferir `terminal` + Python para llamadas OpenRouter.
 4. **execute_code**: no confiable para APIs externas por timeouts de 30s. Preferir `terminal`.
 5. **Brave API**: necesita plan "Data for Search" (no "Data for AI").
-6. **SDK rewrite test memory**: existe físicamente en Mem0 pero no puede borrarse via MCP server (bug: IDs de search no resuelven en Mem0 update/delete). Filtrada client-side en prefetch y search.
+6. **SDK rewrite test memory**: existe físicamente en Mem0 pero no puede borrarse via MCP server (bug: IDs de search no resuelven en Mem0 update/delete). Filtrada client-side en prefetch y search. Solo afecta al plugin de memory.
 7. **Hooks**: no hay hooks activos. El directorio `hooks/` está vacío.
 8. **Sandboxes**: sin imágenes. El directorio `sandboxes/` está vacío.
 
