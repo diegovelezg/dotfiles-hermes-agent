@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-05T02:08:46.637216",
+  "updated_at": "2026-04-05T14:00:41.677949",
   "platforms": {
     "discord": [
       {
@@ -61,6 +61,12 @@
         "name": "Servidor de Diego / #notas / https://www.sciencealert.com/giant-study-reveals-why-some-viruses-hide-inside... / topic 1489661845148143799",
         "type": "thread",
         "thread_id": "1489661845148143799"
+      },
+      {
+        "id": "1490178427972489226:1490178427972489226",
+        "name": "Servidor de Diego / #notas / usa el skill intell-reader para almacenar https://www.sciencealert.com/new-u... / topic 1490178427972489226",
+        "type": "thread",
+        "thread_id": "1490178427972489226"
       }
     ],
     "telegram": [
