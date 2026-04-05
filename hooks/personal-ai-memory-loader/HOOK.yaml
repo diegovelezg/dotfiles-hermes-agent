@@ -1,9 +1,0 @@
-name: personal-ai-memory-loader
-description: Load Diego's memories and policies from personal-ai MCP on session start
-events:
-  - session:start
-  - session:reset
-env:
-  PERSONAL_AI_BASE_URL: https://uaimcp.papelitosdecolor.com
-  PERSONAL_AI_API_KEY: REoOdTWXA0OydZSmeuqx21DWKq8pop7d
-  PERSONAL_AI_REMOTE_URL: https://uaimcp.papelitosdecolor.com/sse
