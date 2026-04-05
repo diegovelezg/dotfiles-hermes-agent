@@ -1,102 +1,117 @@
-# Hermes Agent — Configuración y Arquitectura
+# Hermes Agent — Dotfiles
 
-## Overview
+Configuración personalizada de Hermes Agent para Diego Vélez (@diegovelezg).
 
-Setup personalizado de Hermes Agent (Claude Code) para Diego Vélez. Coordina MiniMax como agente principal con DeepSeek (OpenRouter) para investigación pesada, y múltiples backends de búsqueda web con fallback automático.
+Stack: MiniMax-M2 como agente principal + DeepSeek (OpenRouter) para investigación + personal-ai (Mem0) como memoria persistente.
 
 ---
 
 ## Arquitectura General
 
 ```
-Usuario (Telegram/Discord)
-        ↓
-  Hermes Gateway
-        ↓
-  AIAgent (MiniMax-M2) ← agente principal, coordina todo
-        ↓
+Usuario (Telegram / Discord)
+         ↓
+  Hermes Gateway  (Telegram bot + Discord bot)
+         ↓
+  AIAgent  (MiniMax-M2 — agente principal)
+         ↓
   ┌─────────────────────────────────────┐
-  │  Tools: web_search, web_extract     │
-  │          delegate_task, terminal   │
-  │          execute_code, memory       │
-  │          mcp_* (personal-ai bridge) │
+  │  Tools nativas                      │
+  │  • web_search / web_extract         │
+  │  • terminal / execute_code           │
+  │  • delegate_task                     │
+  │  • memory (builtin + plugin)         │
+  │  • mcp_* (personal-ai bridge)        │
   └─────────────────────────────────────┘
-        ↓
-  Subagentes opcionales (delegate_task)
-  └─ modelo + provider override
-        ↓
-  OpenRouter API (DeepSeek-V3/R1)
+         ↓
+  OpenRouter  (DeepSeek-V3 / R1 — investigación)
 ```
+
+**Canal de memoria personal:** personal-ai MCP v5 (Mem0) via plugin SSE bridge.
 
 ---
 
-## Sistema de Memorias
+## Sistema de Memoria
 
-### Arquitectura de memoria dual (v0.7.0 + plugin)
+### Arquitectura dual (v0.7.0)
 
-Hermes v0.7.0 introduce un sistema de memory providers pluggables. Nuestra implementación usa:
-
-#### 1. Builtin Memory Provider (siempre activo)
-
-Archivos planos que se cargan via `MemoryStore.load_from_disk()`:
-
-- `~/.hermes/memories/MEMORY.md` — notas de trabajo del agente
-- `~/.hermes/memories/USER.md` — perfil del usuario
-
-#### 2. Personal AI Memory Provider Plugin (v1.0.0)
-
-Plugin nativo en `plugins/memory/personal-ai/`. Integra el MCP personal-ai v5 (Mem0-backed) como provider de primera clase.
-
-- **SSOT**: personal-ai MCP — sin escritura intermedia a MEMORY.md
-- **7 tools expuestas** al modelo: search, memories_manage, briefing_generate, ledger_*, browser_activity_query
-- **Lifecycle nativo**: initialize/prefetch/sync_turn llamados por MemoryManager
-- **Cache TTL**: 120s en prefetch para evitar llamadas redundantes
-
-**Flujo (v0.7.0 + plugin):**
 ```
-AIAgent.__init__
-    → MemoryManager.add_provider(BuiltinMemoryProvider)
-    → MemoryManager.add_provider(PersonalAIMemoryProvider)
-    → initialize() → SSE connect a personal-ai MCP
-    → prefetch() → recall semántico (cached)
-    → get_tool_schemas() → 7 tools disponibles al modelo
+MemoryManager
+    ├── BuiltinMemoryProvider        ← MEMORY.md / USER.md (siempre activo)
+    │                                    Memorias de trabajo y perfil de usuario
+    │
+    └── PersonalAIMemoryProvider     ← Plugin (este repo)
+         │                              Conexión SSE → personal-ai MCP
+         ├── prefetch()                 → recall semántico al inicio de sesión
+         ├── system_prompt_block()      → instrucciones de tools en el prompt
+         ├── get_tool_schemas()         → 8 tools expuestas al modelo
+         └── handle_tool_call()         → dispatch directo al MCP
 ```
 
-**Config:**
+**SSOT de la memoria personal: personal-ai MCP** — el plugin escribe y lee directo, sin escritura intermedia a MEMORY.md.
+
+### Plugin personal-ai MCP
+
+**Ubicación:** `plugins/memory/personal-ai/`
+
+**8 tools expuestas al modelo:**
+
+| Tool | Descripción |
+|------|-------------|
+| `personal_ai_memories_search` | Búsqueda semántica sobre know/policy/episodic |
+| `personal_ai_memories_manage` | Crear, actualizar, deprecar memorias |
+| `ledger_query` | Consultar items del ledger (action/intel) |
+| `ledger_item_create` | Crear item en el ledger |
+| `ledger_bulk_action` | Bulk update/archive de items del ledger |
+| `briefing_generate` | Generar briefing estructurado desde ledger + memorias |
+| `browser_activity_add` | Registrar actividad de navegación |
+| `browser_activity_query` | Consultar historial de navegación |
+
+**Tipos de memoria en Mem0:**
+
+| Tipo | Descripción | Ejemplo |
+|------|-------------|---------|
+| `know` | Hechos persistentes sobre Diego | proyectos, personas, preferencias |
+| `policy` | Reglas operativas | "Diego prefiere español, sin markdown en Telegram" |
+| `episodic` | Eventos pasados | "Grupos focales completados 2-3 abr 2026" |
+
+**Configuración del plugin** (variables en `~/.hermes/.env`):
+
+```bash
+PERSONAL_AI_BASE_URL=https://uaimcp.papelitosdecolor.com
+PERSONAL_AI_API_KEY=***
+PERSONAL_AI_REMOTE_URL=https://uaimcp.papelitosdecolor.com/sse
+PERSONAL_AI_USER_ID=1093162286
+```
+
+**Activar en** `~/.hermes/config.yaml`:
+
 ```yaml
-# ~/.hermes/config.yaml
 memory:
   provider: personal-ai
   provider_settings:
-    personal_ai:
+    personal-ai:
       cache_ttl: 120
 ```
 
-**Plugin estructura:**
-```
-plugins/memory/personal-ai/
-├── __init__.py      # PersonalAIMemoryProvider + PersonalAIClient
-├── plugin.yaml      # Metadata, pip_dependencies
-└── README.md        # Documentación completa
-```
+### Protocolo SSE del personal-ai MCP
 
-### Hook legacy (deprecado — mantener temporalmente)
+El MCP server (`papelitosdecolor.com`) usa Server-Sent Events con sesión aislada por UUID:
 
-```
-~/.hermes/hooks/personal-ai-memory-loader/
-├── HOOK.yaml       # eventos + credenciales
-└── handler.py      # lógica legacy via SSE
-```
+- **GET `/sse`** → downstream (servidor → cliente): stream de eventos JSON-RPC
+- **POST `/messages?sessionId=UUID`** → upstream (cliente → servidor): comandos y queries
+- El servidor envía `endpoint` como primer evento con la URL de callback
+- Heartbeats automáticos para mantener la conexión viva
+- Cada sesión tiene su propia instancia aislada del servidor MCP
 
-Una vez el plugin verificado funcional, remover este hook y limpiar la sección `<!-- PERSONAL-AI-INJECT -->` de MEMORY.md.
+### Builtin Memory Provider
 
-### Tipos de memoria personal-ai
+Archivos planos en `~/.hermes/memories/`:
 
-| Tipo | Descripción |
-|------|-------------|
-| `know` | Hechos persistentes sobre Diego (preferencias, proyectos, personas) |
-| `policy` | Reglas operativas (ej: "Diego prefiere español, sin markdown") |
-| `episodic` | Eventos pasados (ej: "Grupos focales completados 2-3 abr 2026") |
+- `MEMORY.md` — notas de trabajo del agente (cargadas via `MemoryStore.load_from_disk`)
+- `USER.md` — perfil del usuario
+
+Estos archivos coexisten con el plugin. El plugin personal-ai es el SSOT para hechos sobre Diego; los archivos builtin se usan para notas de sesión y contexto temporal.
 
 ---
 
@@ -104,18 +119,22 @@ Una vez el plugin verificado funcional, remover este hook y limpiar la sección 
 
 | Rol | Modelo | Provider | Uso |
 |-----|--------|----------|-----|
-| Agente principal | MiniMax-M2 | minimax | Conversación, coordinación |
-| Análisis pesado | DeepSeek-V3 | OpenRouter | Síntesis de investigación |
-| Razonamiento | DeepSeek-R1 | OpenRouter | Análisis profundo |
-| Visión | MiniMax-V06 | minimax | Imágenes |
+| Agente principal | MiniMax-M2 | minimax | Conversación, coordinación, todas las tools |
+| Investigación pesada | DeepSeek-V3 | OpenRouter | Síntesis de temas complejos |
+| Razonamiento profundo | DeepSeek-R1 | OpenRouter | Análisis lógico, debugging |
+| Visión | MiniMax-V06 | minimax | Análisis de imágenes |
+
+```yaml
+# ~/.hermes/config.yaml
+model: "minimax/minimax-v06"
+provider: "minimax"
+```
 
 ---
 
 ## Web Search — Backends y Fallback
 
-### Stack configurado
-
-**Default: Exa Search** → **Fallback: Brave Search**
+**Stack:** Exa Search (default) → Brave Search (fallback automático)
 
 ### Cómo funciona
 
@@ -123,107 +142,61 @@ Una vez el plugin verificado funcional, remover este hook y limpiar la sección 
 1. Si `config.yaml` tiene `web.backend` explícito → usa ese
 2. Si no → default = `"exa"`
 
-Cuando Exa falla (exception), el código en `web_search_tool` llama a `_get_fallback_backend("exa")` → retorna `"brave"`, y re-ejecuta con Brave.
+Cuando Exa lanza exception, el código re-ejecuta con Brave via `_get_fallback_backend("exa")`.
 
 ### Keys requeridas
 
 ```bash
-EXA_API_KEY=c785be...6808
-BRAVE_API_KEY=BSAoyn...y4Mt
+EXA_API_KEY=***
+BRAVE_API_KEY=***
 ```
 
-Ambas configuradas en `~/.hermes/.env`.
+**Nota Brave:** Necesita plan "Data for Search" (no "Data for AI"). Keys `BSA*` del plan AI no funcionan.
 
-### Fallback chain completo (todos los backends)
+### Cadena completa
 
 ```
-web_search → exa ──fail──→ brave ──fail──→ firecrawl
+web_search  → exa ──fail──→ brave ──fail──→ firecrawl
 web_extract → firecrawl → parallel → tavily
 ```
 
 ---
 
-## Flujo de Investigación ( patrón estándar )
+## Flujo de Investigación (patrón estándar)
 
 ```
 1. web_search (Exa, limit=5)
    ↓
 2. web_extract (las 3-5 URLs más relevantes)
    ↓
-3. Synthesis con DeepSeek-V3 via OpenRouter
+3. Síntesis con DeepSeek-V3 via OpenRouter
 ```
 
 ---
 
-## Patches Activos
+## Patches Aplicados
 
 ### 1. `tools/web_tools.py` — Brave Search
 
-**Problema original**: Endpoint incorrecto y auth wrong para Brave API.
+**Problema:** Endpoint incorrecto (`reso/v1/`) y auth wrong para Brave API.
 
-**Cambios**:
-- `_brave_search_request()`: usa `httpx` con `X-Subscription-Token` header (no Bearer)
-- `_brave_search()`: endpoint `web/search` (no `search`)
-- `_get_backend()`: default "exa" (antes fallback automático por presencia de key)
+**Cambios:**
+- Endpoint: `reso/v1/search` → `res/v1/web/search`
+- Auth: `Authorization: Bearer` → `X-Subscription-Token`
+- HTTP client: `urllib` → `httpx` (gzip decompression automático)
+- `_get_backend()`: default "exa"
 - `_get_fallback_backend()`: nueva función (exa → brave)
-- Bloque try/except en `web_search_tool` para fallback automático de Exa → Brave
-
-**Archivo del patch**: `patches/brave-search.patch`
+- Bloque try/except en `web_search_tool` para fallback automático
 
 ```bash
-# Para reaplicar después de un update del agent:
+# Reaplicar después de update del agent:
 cd ~/dotfiles-hermes-agent
 patch -p1 < patches/brave-search.patch
 ```
 
 ### 2. `tools/delegate_tool.py` — Model/Provider override
 
-**Problema**: los parámetros `model` y `provider` eran ignorados al delegar.
-
----
-
-## Configuración de Archivos
-
-### `~/.hermes/config.yaml`
-
-```yaml
-# Modelo y provider por defecto
-model: "minimax/minimax-v06"
-provider: "minimax"
-
-# Web search
-web:
-  backend: exa          # explicit, sin esto default = exa
-
-# Delegation defaults
-delegation:
-  provider: "openrouter"
-  model: "deepseek/deepseek-chat-v3"
-
-# Display
-display:
-  model: "anthropic/claude-sonnet-4"
-
-# Gateway
-gateway:
-  platform: telegram
-  telegram:
-    bot_token: "${TELEGRAM_BOT_TOKEN}"
-```
-
-### `~/.hermes/.env` (NO subir al repo)
-
-```
-MINIMAX_API_KEY=***
-OPENROUTER_API_KEY=***
-EXA_API_KEY=c785be...6808
-BRAVE_API_KEY=BSAoyn...y4Mt
-PERSONAL_AI_API_KEY=***
-TELEGRAM_BOT_TOKEN=***
-DISCORD_BOT_TOKEN=***
-```
-
-Template de referencia: `configs/.env.example`
+**Problema:** los parámetros `model` y `provider` eran ignorados al delegar.
 
 ---
 
@@ -233,20 +206,21 @@ Template de referencia: `configs/.env.example`
 
 | Plataforma | Status | ID/Destino |
 |-----------|--------|------------|
-| Telegram | Conectado ✓ | DM, Home: 1093162286 |
+| Telegram | Conectado ✓ | DM y Home: 1093162286 |
 | Discord | Conectado ✓ | Home: 1474242034356326442 |
 
-### Gateway startup
+### Startup
 
 ```bash
-# Con systemd (linger habilitado)
+# Con systemd
 systemctl --user start hermes-gateway
 systemctl --user enable hermes-gateway
 
-# O manual
-cd ~/dotfiles-hermes-agent
-source venv/bin/activate
-python -m gateway.run
+# Logs
+journalctl --user -u hermes-gateway -f
+
+# Restart después de cambios
+systemctl --user restart hermes-gateway
 ```
 
 ---
@@ -255,11 +229,102 @@ python -m gateway.run
 
 ### Buenos Días
 
-- **Job ID**: `20257ad8ddf4`
-- **Schedule**: Daily 7:00 AM Lima (12 UTC)
-- **Delivery**: Telegram
-- **Sources**: Histórico, Techmeme, AI Twitter, ScienceDaily, BigThink
-- **Output**: `skills/buenos-dias/output/hoy.ogg` + `.md` con fecha
+- **Job ID:** `20257ad8ddf4`
+- **Schedule:** Daily 7:00 AM Lima (12 UTC)
+- **Delivery:** Telegram
+- **Sources:** Histórico, Techmeme, AI Twitter, ScienceDaily, BigThink
+- **Output:** `skills/buenos-dias/output/hoy.ogg` + `.md` con fecha
+
+---
+
+## Configuración de Archivos
+
+### `~/.hermes/config.yaml`
+
+```yaml
+model: "minimax/minimax-v06"
+provider: "minimax"
+
+web:
+  backend: exa
+
+delegation:
+  provider: "openrouter"
+  model: "deepseek/deepseek-chat-v3"
+
+display:
+  model: "anthropic/claude-sonnet-4"
+
+gateway:
+  platform: telegram
+  telegram:
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+
+memory:
+  provider: personal-ai
+```
+
+### `~/.hermes/.env` (NUNCA subir al repo)
+
+```
+MINIMAX_API_KEY=***
+OPENROUTER_API_KEY=***
+EXA_API_KEY=***
+BRAVE_API_KEY=***
+PERSONAL_AI_API_KEY=***
+PERSONAL_AI_BASE_URL=https://uaimcp.papelitosdecolor.com
+PERSONAL_AI_REMOTE_URL=https://uaimcp.papelitosdecolor.com/sse
+PERSONAL_AI_USER_ID=1093162286
+TELEGRAM_BOT_TOKEN=***
+DISCORD_BOT_TOKEN=***
+```
+
+Template público: `configs/.env.example`
+
+---
+
+## Estructura del Repo
+
+```
+dotfiles-hermes-agent/
+├── configs/
+│   ├── config.yaml          # Config principal (sin secrets)
+│   ├── .env.example         # Template de variables
+│   └── gateway_*.json       # Estado de canales
+├── plugins/
+│   └── memory/
+│       └── personal-ai/     # Plugin memory provider v1.0.0
+│           ├── __init__.py  # PersonalAIMemoryProvider + PersonalAIClient
+│           ├── plugin.yaml  # Metadata + pip_dependencies
+│           └── README.md    # Documentación del plugin
+├── skills/                  # 29 skills instalados
+├── scripts/
+│   └── backup.sh            # Backup idempotente
+├── patches/
+│   └── brave-search.patch   # Patch para tools/web_tools.py
+└── docs/
+    └── ARQUITECTURA.md      # Detalle técnico adicional
+```
+
+**Directorios del runtime `~/.hermes/` (no en repo):**
+
+- `memories/` — MEMORY.md y USER.md (builtin memory provider)
+- `sessions/` — sesiones activas del gateway
+- `cron/` — jobs programados
+- `skills/` — skills runtime (symlink o copia)
+
+---
+
+## Notas Importantes
+
+1. **API Keys**: nunca subirlas. Usar `.env.example` como template.
+2. **Patches**: reaplicar `patches/brave-search.patch` después de actualizar hermes-agent.
+3. **delegate_task**: no usar para research — trunca resultados. Preferir `terminal` + Python para llamadas OpenRouter.
+4. **execute_code**: no confiable para APIs externas por timeouts de 30s. Preferir `terminal`.
+5. **Brave API**: necesita plan "Data for Search" (no "Data for AI").
+6. **SDK rewrite test memory**: existe físicamente en Mem0 pero no puede borrarse via MCP server (bug: IDs de search no resuelven en Mem0 update/delete). Filtrada client-side en prefetch y search.
+7. **Hooks**: no hay hooks activos. El directorio `hooks/` está vacío.
+8. **Sandboxes**: sin imágenes. El directorio `sandboxes/` está vacío.
 
 ---
 
@@ -272,44 +337,15 @@ python -m gateway.run
 # Ver estado del gateway
 systemctl --user status hermes-gateway
 
-# Logs del gateway
+# Ver logs en tiempo real
 journalctl --user -u hermes-gateway -f
 
-# Restart después de cambios
+# Reiniciar después de cambios
 systemctl --user restart hermes-gateway
-```
 
----
+# Verificar tools disponibles
+hermes tools list
 
-## Notas Importantes
-
-1. **API Keys**: nunca subirlas al repo. Usar `.env.example` como template.
-2. **Patches**: después de actualizar `hermes-agent`, reaplicar `patches/brave-search.patch`.
-3. **delegate_task**: NO usar para research — truncó resultados a ~500 chars. Usar `terminal` + Python para llamadas OpenRouter.
-4. **execute_code**: no confiable para APIs externas por timeouts de 30s. Preferir `terminal`.
-5. **Brave API**: necesita plan "Data for Search" (no "Data for AI"). Keys `BSA*` del plan AI no funcionan.
-6. **Memoria personal-ai**: ahora es un plugin nativo v0.7.0 (`plugins/memory/personal-ai/`). El hook legacy en `hooks/personal-ai-memory-loader/` está deprecado pero se mantiene temporalmente como fallback. Actualizar config.yaml con `memory.provider: personal-ai` para activar.
-
----
-
-## Estructura del Repo
-
-```
-dotfiles-hermes-agent/
-├── configs/
-│   ├── config.yaml           # Config principal (sin secrets)
-│   ├── .env.example          # Template de variables
-│   └── gateway_*.json        # Estado de canales
-├── hooks/
-│   └── personal-ai-memory-loader/  # DEPRECADO: legacy hook (por remover post-verificación)
-├── plugins/
-│   └── memory/
-│       └── personal-ai/      # Plugin memory provider v1.0.0
-├── skills/                   # Todos los skills instalados
-├── scripts/
-│   └── backup.sh            # Backup idempotente
-├── patches/
-│   └── brave-search.patch    # Patch para web_tools.py
-└── docs/
-    └── ARQUITECTURA.md       # Detalle técnico adicional
+# Ver estado de memory providers
+hermes doctor
 ```
