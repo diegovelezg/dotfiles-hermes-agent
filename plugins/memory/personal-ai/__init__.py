@@ -115,102 +115,7 @@ MEMORIES_MANAGE_SCHEMA = {
     },
 }
 
-# ---------------------------------------------------------------------------
-# Ledger + Briefing + Browser Activity tool schemas
-# ---------------------------------------------------------------------------
 
-LEDGER_QUERY_SCHEMA = {
-    "name": "ledger_query",
-    "description": "Query ledger items from personal-ai. Returns matching items with relevance scores.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "Natural language query."},
-            "limit": {"type": "integer", "default": 10, "description": "Max results (default: 10)."},
-            "status": {"type": "string", "description": "Filter by status (e.g. 'permanent', 'active')."},
-            "nature": {"type": "string", "description": "Filter by nature (e.g. 'intel', 'project', 'person')."},
-        },
-        "required": ["query"],
-    },
-}
-
-LEDGER_ITEM_CREATE_SCHEMA = {
-    "name": "ledger_item_create",
-    "description": "Create a ledger item in personal-ai (note, task, project, person, intel, etc).",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "title": {"type": "string", "description": "Item title."},
-            "content": {"type": "string", "description": "Optional detailed content/description."},
-            "nature": {"type": "string", "enum": ["action", "intel"], "default": "action", "description": "Type: 'action' (tasks/projects) or 'intel' (notes/info). Intel must have status='permanent'."},
-            "status": {"type": "string", "description": "Status: permanent (intel), active (action). Intel nature requires permanent."},
-            "subject": {"type": "string", "description": "Subject/tag (e.g. @proyecto, @persona)."},
-            "priority": {"type": "string", "description": "Priority: low, medium, high, urgent."},
-            "due_at": {"type": "string", "description": "Due date (ISO format)."},
-        },
-        "required": ["title", "nature"],
-    },
-}
-
-LEDGER_BULK_ACTION_SCHEMA = {
-    "name": "ledger_bulk_action",
-    "description": "Bulk update or archive multiple ledger items by ID. IDs come from ledger_query results.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "ids": {"type": "array", "items": {"type": "string"}, "description": "List of ledger item IDs (from ledger_query)."},
-            "note": {"type": "string", "description": "Note/reason for the action."},
-            "status": {"type": "string", "description": "New status: active, archived, etc."},
-            "priority": {"type": "string", "description": "New priority to set."},
-        },
-        "required": ["ids", "note"],
-    },
-}
-
-BRIEFING_GENERATE_SCHEMA = {
-    "name": "briefing_generate",
-    "description": "Generate a structured briefing from ledger items matching a query.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "Query to select relevant ledger items."},
-            "format": {"type": "string", "default": "text", "description": "Format: text, markdown, html."},
-            "max_items": {"type": "integer", "default": 20, "description": "Max ledger items to include."},
-        },
-        "required": ["query"],
-    },
-}
-
-BROWSER_ACTIVITY_ADD_SCHEMA = {
-    "name": "browser_activity_add",
-    "description": "Log a browser activity (URL, title, action) to personal-ai.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "url": {"type": "string", "description": "URL of the page."},
-            "title": {"type": "string", "description": "Page title."},
-            "summary": {"type": "string", "description": "Brief summary of the activity (required for vectorization)."},
-            "action": {"type": "string", "default": "visit", "description": "Action: visit, search, click, submit, scroll."},
-            "site": {"type": "string", "description": "Site/domain name."},
-        },
-        "required": ["url", "summary"],
-    },
-}
-
-BROWSER_ACTIVITY_QUERY_SCHEMA = {
-    "name": "browser_activity_query",
-    "description": "Query browser activity history from personal-ai.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "query": {"type": "string", "description": "Search query."},
-            "site": {"type": "string", "description": "Filter by site/domain."},
-            "limit": {"type": "integer", "default": 10, "description": "Max results."},
-            "match_threshold": {"type": "number", "default": 0.5, "description": "Relevance threshold (0-1)."},
-        },
-        "required": ["query"],
-    },
-}
 
 
 # ---------------------------------------------------------------------------
@@ -612,25 +517,18 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
     # -- Tools --------------------------------------------------------------
 
     def get_tool_schemas(self) -> List[Dict[str, Any]]:
-        """Return all personal-ai tools."""
+        """Return only memory-related personal-ai tools."""
         return [
             MEMORIES_SEARCH_SCHEMA,
             MEMORIES_MANAGE_SCHEMA,
-            LEDGER_QUERY_SCHEMA,
-            LEDGER_ITEM_CREATE_SCHEMA,
-            LEDGER_BULK_ACTION_SCHEMA,
-            BRIEFING_GENERATE_SCHEMA,
-            BROWSER_ACTIVITY_ADD_SCHEMA,
-            BROWSER_ACTIVITY_QUERY_SCHEMA,
         ]
 
     def handle_tool_call(self, tool_name: str, args: Dict[str, Any], **kwargs) -> str:
-        """Dispatch a tool call to the appropriate client method."""
+        """Dispatch a memory tool call to the appropriate client method."""
         if not self._client:
             return json.dumps({"error": "personal-ai not initialized"})
 
         try:
-            # Memory tools — use typed client methods
             if tool_name == "personal_ai_memories_search":
                 results = self._client.search_memories(
                     query=args.get("query", ""),
@@ -653,14 +551,6 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
                     user_id=args.get("user_id", self._user_id),
                 )
                 self._cached_prefetch = None
-                return json.dumps({"status": "success", "data": result})
-
-            # Ledger, briefing, browser — direct MCP call
-            elif tool_name in (
-                "ledger_query", "ledger_item_create", "ledger_bulk_action",
-                "briefing_generate", "browser_activity_add", "browser_activity_query",
-            ):
-                result = self._client.call_tool(tool_name, args)
                 return json.dumps({"status": "success", "data": result})
 
             else:

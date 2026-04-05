@@ -1,6 +1,6 @@
 name: personal-ai
 version: "1.0.0"
-description: Personal AI memory provider — integrates Diego's custom personal-ai MCP (Mem0-backed) as a first-class memory plugin for Hermes Agent v0.7+.
+description: Personal AI memory provider — exposes only memory tools (know/policy/episodic search & management) from Diego's personal-ai MCP v5 server. Ledger/briefing/browser tools are in the separate personal-ai-ledger plugin.
 provider: memory
 author: Diego Vélez
 homepage: https://github.com/diegovelez/hermes-personal-ai
