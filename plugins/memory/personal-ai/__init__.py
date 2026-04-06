@@ -601,6 +601,24 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
             },
         ]
 
+    def save_config(self, values: Dict[str, Any], hermes_home: str) -> None:
+        """Write non-secret config to $HERMES_HOME/personal-ai.json.
+
+        Secrets (API keys) go to .env via the MCP server config.
+        This writes only the provider-specific settings.
+        """
+        import json
+        from pathlib import Path
+        config_path = Path(hermes_home) / "personal-ai.json"
+        existing = {}
+        if config_path.exists():
+            try:
+                existing = json.loads(config_path.read_text())
+            except Exception:
+                pass
+        existing.update(values)
+        config_path.write_text(json.dumps(existing, indent=2))
+
     # -- Shutdown -----------------------------------------------------------
 
     def shutdown(self) -> None:
@@ -615,6 +633,6 @@ preferences, projects, or people in his life. Act proactively — don't wait to 
 # Plugin entry point (register hook)
 # ---------------------------------------------------------------------------
 
-def register() -> PersonalAIMemoryProvider:
-    """Plugin entry point — returns the provider instance."""
-    return PersonalAIMemoryProvider()
+def register(ctx) -> None:
+    """Plugin entry point — registers the provider with the MemoryManager."""
+    ctx.register_memory_provider(PersonalAIMemoryProvider())
