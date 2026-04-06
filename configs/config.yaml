@@ -248,8 +248,12 @@ code_execution:
   timeout: 300
 group_sessions_per_user: true
 mcp_servers:
-  # personal-ai bridge se usa via skill personal-ai-bridge (mcporter)
-  # NO agregar aquí — el SDK Python de Hermes no puede conectar al servidor SSE custom
+  personal-ai:
+    env:
+      PERSONAL_AI_BASE_URL: https://uaimcp.papelitosdecolor.com
+      PERSONAL_AI_API_KEY: your_api_key_here
+      PERSONAL_AI_REMOTE_URL: https://uaimcp.papelitosdecolor.com/sse
+      PERSONAL_AI_USER_ID: "1093162286"
 platform_toolsets:
   cli:
   - browser
@@ -347,3 +351,15 @@ web:
 #   cheap_model:
 #     provider: openrouter
 #     model: google/gemini-2.5-flash
+
+# ── MCP Servers ───────────────────────────────────────────────────────────
+# External MCP servers connected via SSE or HTTP.
+# Env vars (including secrets) go under `env:` — injected at runtime.
+#
+# mcp_servers:
+#   personal-ai:
+#     env:
+#       PERSONAL_AI_BASE_URL: https://uaimcp.papelitosdecolor.com
+#       PERSONAL_AI_API_KEY: your_api_key_here
+#       PERSONAL_AI_REMOTE_URL: https://uaimcp.papelitosdecolor.com/sse
+#       PERSONAL_AI_USER_ID: "1093162286"
