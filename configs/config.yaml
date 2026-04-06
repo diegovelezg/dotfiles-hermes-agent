@@ -207,7 +207,7 @@ memory:
     personal_ai:
       cache_ttl: 120
 delegation:
-  model: deepseek/deepseek-chat-v3
+  model: deepseek/deepseek-r1
   provider: openrouter
   base_url: ''
   api_key: ''
