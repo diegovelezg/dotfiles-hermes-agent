@@ -1,10 +1,10 @@
 ---
 name: buenos-dias
-description: Informe matutino con noticias, historia y ciencia — generado como audio para Discord. Usa DeepSeek para investigación web delegando automáticamente.
-version: 2.0.0
+description: Informe matutino con noticias, historia y ciencia — generado como audio y enviado a Telegram. Usa DeepSeek para investigación web delegando automáticamente.
+version: 3.0.0
 metadata:
   hermes:
-    tags: [morning-briefing, news, audio, Discord, TTS]
+    tags: [morning-briefing, news, audio, Telegram, TTS, es-PE-CamilaNeural]
     category: productivity
 ---
 
@@ -12,20 +12,20 @@ metadata:
 
 ## Objetivo
 
-Generar un informe matutino en audio con información de fuentes diversas y entregarlo vía Discord.
+Generar un informe matutino en audio con información de fuentes diversas y entregarlo como voice message a Telegram.
 
 ## Arquitectura
 
 Este skill usa **dos modelos**:
 
-- **MiniMax** (agente principal): coordina, sintetiza, genera TTS y envía a Discord
+- **MiniMax** (agente principal): coordina, sintetiza, genera TTS y entrega a Telegram
 - **DeepSeek R1** (delegado): ejecuta toda la investigación web mediante `delegate_task`
 
 El flujo es:
 ```
 MiniMax → delegate_task(DeepSeek R1) → investigación web
        ← resultados ←
-MiniMax → sintetiza reporte → TTS → Discord
+MiniMax → sintetiza reporte → TTS → Telegram (voice message)
 ```
 
 ## Paso 1: Investigar con DeepSeek (delegar)
@@ -34,27 +34,17 @@ Para cada fuente, ejecutá `delegate_task` con DeepSeek R1. Recopilá TODOS los 
 
 ### Fuentes a investigar
 
-**1. Trending AI en Twitter/X**
-```
-goal: Navega a https://x.com/search?q=AI&src=trend_chart y extrae los 5 trending topics sobre AI/ML del día. Devuelve solo los 5 topics con su texto exacto.
-```
-
-**2. Evento histórico (onthisday.com)**
+**1. Evento histórico (onthisday.com)**
 ```
 goal: Navega a https://onthisday.com/day/{MES}/{DIA} usando la fecha ACTUAL del sistema (mes en inglés en minúsculas, día sin ceros). Ejemplo: si hoy es 6 de abril → https://onthisday.com/day/april/6. Extrae UN evento histórico interesante cuya fecha coincida exactamente con el día de hoy. Devuelve el evento con nombre, año y descripción breve (máx 300 caracteres).
 ```
 
-**3. Tecnología (techmeme.com)**
+**2. Tecnología (techmeme.com)**
 ```
 goal: Navega a https://techmeme.com y extrae las 3 noticias principales de la sección "Top News". Para cada una devuelve: titular exacto y frase de contexto (máx 200 caracteres).
 ```
 
-**4. Ciencia (sciencedaily.com)**
-```
-goal: Navega a https://sciencedaily.com y busca una noticia interesante de la sección "Top Science News". Devuelve: titular exacto y resumen de 2-3 oraciones.
-```
-
-**5. Artículo interesante (bigthink.com)**
+**3. Artículo interesante (bigthink.com)**
 ```
 goal: Navega a https://bigthink.com y encuentra un titular del home page que pueda ser interesante. Devuelve el titular y una línea de por qué es relevante.
 ```
@@ -91,14 +81,8 @@ Con todos los resultados de los delegates, redactá el reporte en CASTELLANO con
 ## Tecnología
 [Un párrafo conectando las 3 noticias de Techmeme]
 
-## AI Trends en Twitter
-[Lista de 5 trending topics sobre AI/ML del día]
-
-## Ciencia
-[Resumen narrativo de la noticia científica]
-
 ## Podría ser interesante
-[Titular de Big Thinkplanteado como idea o pregunta]
+[Titular de Big Think planteado como idea o pregunta]
 
 *¡Que tengas un excelente día!*
 ```
@@ -109,37 +93,26 @@ Guardar en: `~/.hermes/skills/buenos-dias/output/YYYY-MM-DD.md`
 
 ## Paso 3: Generar audio
 
-Usar `text_to_speech` de Hermes:
+Usar `text_to_speech` de Hermes con la voz configurada:
+
 - Provider: Edge TTS (configurado en `config.yaml:tts.provider`)
 - Voz: `es-PE-CamilaNeural` (configurado en `config.yaml:tts.edge.voice`)
 - Output: `~/.hermes/skills/buenos-dias/output/hoy.ogg`
 
-El archivo `hoy.ogg` SIEMPRE se sobrescribe.
-
 **Importante:** La voz se configura en `~/.hermes/config.yaml` bajo `tts.edge.voice`. No se pasa como parámetro — el tool la lee de la config.
+
+El archivo `hoy.ogg` SIEMPRE se sobrescribe.
 
 ## Paso 4: Enviar a Telegram
 
 El TTS genera un archivo `.ogg` con `MEDIA:/path/to/hoy.ogg`. Cuando el agent corre dentro del gateway de Telegram, el MEDIA tag se entrega automáticamente como voice message al home channel.
 
-Para scheduling, configurar un cron con `deliver: "telegram"`:
-
-```
-mcp_cronjob(
-  action="create",
-  prompt="Ejecuta el skill Buenos Días: genera el reporte de hoy con TTS voz es-PE-CamilaNeural y envía a Telegram usando el MEDIA tag del audio.",
-  schedule="0 8 * * *",
-  name="buenos-dias-matutino",
-  deliver="telegram",
-  skill="buenos-dias"
-)
-```
-
-El agent de Telegram tiene el tool `send_message` disponible, por lo que puede enviar el audio directamente al chat de Diego.
+Para scheduling, configurar un cron con `deliver: "telegram"` y skill `buenos-dias`.
 
 ## Notas
 
 - Investigación web → DeepSeek (delegate), no el agente principal
-- Síntesis, TTS y Discord → MiniMax (agente principal)
-- Usar herramientas nativas de Hermes (delegate_task, text_to_speech, send_message)
-- Para scheduling: `mcp_cronjob` daily a las 8 AM con prompt: "Ejecuta el skill buenos-dias"
+- Síntesis, TTS y Telegram → MiniMax (agente principal)
+- Usar herramientas nativas de Hermes (delegate_task, text_to_speech)
+- Scheduling: cron daily a las 7 AM Lima con `deliver: telegram` y `skill: buenos-dias`
+- La voz se configura en `config.yaml`: `tts.edge.voice: es-PE-CamilaNeural`
