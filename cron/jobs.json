@@ -1,0 +1,44 @@
+{
+  "jobs": [
+    {
+      "id": "a5976debdb34",
+      "name": "Buenos D\u00edas",
+      "prompt": "Genera el informe matutino de Buenos D\u00edas usando el skill 'buenos-dias'. El informe debe incluir:\n- Fecha actual\n- Un hecho hist\u00f3rico de On This Day (onthisday.com)\n- Noticias de tecnolog\u00eda de Techmeme\n- Un pensamiento inspirador de BigThink\n\nUsa la voz TTS configurada (es-PE-CamilaNeural) para generar el audio. El contenido debe ser en espa\u00f1ol.\n\nEl informe completo (texto + audio) debe entregarse al canal de Telegram del usuario. El output final es un voice message de Telegram con el informe del d\u00eda.",
+      "skills": [
+        "buenos-dias"
+      ],
+      "skill": "buenos-dias",
+      "model": null,
+      "provider": null,
+      "base_url": null,
+      "script": null,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 7 * * *",
+        "display": "0 7 * * *"
+      },
+      "schedule_display": "0 7 * * *",
+      "repeat": {
+        "times": 999,
+        "completed": 0
+      },
+      "enabled": true,
+      "state": "scheduled",
+      "paused_at": null,
+      "paused_reason": null,
+      "created_at": "2026-04-06T17:18:45.925481+00:00",
+      "next_run_at": "2026-04-07T07:00:00+00:00",
+      "last_run_at": null,
+      "last_status": null,
+      "last_error": null,
+      "deliver": "telegram",
+      "origin": {
+        "platform": "telegram",
+        "chat_id": "1093162286",
+        "chat_name": "Diego",
+        "thread_id": null
+      }
+    }
+  ],
+  "updated_at": "2026-04-06T17:18:45.926661+00:00"
+}
