@@ -351,3 +351,15 @@ web:
 #   cheap_model:
 #     provider: openrouter
 #     model: google/gemini-2.5-flash
+
+# ── MCP Servers ───────────────────────────────────────────────────────────
+# External MCP servers connected via SSE or HTTP.
+# Env vars (including secrets) go under `env:` — injected at runtime.
+#
+# mcp_servers:
+#   personal-ai:
+#     env:
+#       PERSONAL_AI_BASE_URL: https://uaimcp.papelitosdecolor.com
+#       PERSONAL_AI_API_KEY: your_api_key_here
+#       PERSONAL_AI_REMOTE_URL: https://uaimcp.papelitosdecolor.com/sse
+#       PERSONAL_AI_USER_ID: "1093162286"
