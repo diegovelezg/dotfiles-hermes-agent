@@ -1,0 +1,34 @@
+{
+  "query": "GEEKOM A8 RYZEN 9",
+  "id": "geekom-a8-ryzen-9",
+  "urls": [
+    "https://mesajil.com/producto/pc-desktop-mini-geekom-a8/",
+    "https://www.oechsle.pe/pc-mini-geekom-a8-ryzen-9-8945hs-32gb-ram-2tb-ssd-graficos-amd-radeon-windows-11-pro-1001245383/p"
+  ],
+  "history": {
+    "2026-04-07T22:10:00Z": {
+      "prices": [
+        {
+          "domain": "mesajil.com",
+          "price": 3836.80,
+          "currency": "S/",
+          "url": "https://mesajil.com/producto/pc-desktop-mini-geekom-a8/"
+        },
+        {
+          "domain": "mesajil.com",
+          "price": 3760.06,
+          "currency": "S/",
+          "note": "precio con transferencia",
+          "url": "https://mesajil.com/producto/pc-desktop-mini-geekom-a8/"
+        },
+        {
+          "domain": "oechsle.pe",
+          "price": null,
+          "currency": "S/",
+          "note": "agotado",
+          "url": "https://www.oechsle.pe/pc-mini-geekom-a8-ryzen-9-8945hs-32gb-ram-2tb-ssd-graficos-amd-radeon-windows-11-pro-1001245383/p"
+        }
+      ]
+    }
+  }
+}
