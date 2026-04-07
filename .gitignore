@@ -1,0 +1,28 @@
+# Ignore all skills
+skills/*
+
+# Except our own
+!skills/diego-*/
+
+# Ignore runtime and personal data
+.env
+.env.*
+auth.json
+auth.lock
+gateway.pid
+gateway_state.json
+logs/
+cache/
+sessions/
+state.db
+state.db-shm
+state.db-wal
+bin/
+node/
+plugins/
+memories/
+channel_directory.json
+cron/
+models_dev_cache.json
+hermes-agent/
+.SKILL_PROMPT_SNAPSHOT
