@@ -1,3 +1,11 @@
 {
-  "queries": []
+  "queries": [
+    {
+      "id": "mat-manduka-ekolite-charcoal",
+      "query": "MAT MANDUKA EKOLITE – CHARCOAL",
+      "url": "https://limayoga.com/tienda/producto/mat-manduka-ekolite-charcoal/",
+      "active": true,
+      "created": "2026-04-07"
+    }
+  ]
 }
