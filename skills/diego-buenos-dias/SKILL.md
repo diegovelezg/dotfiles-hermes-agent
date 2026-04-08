@@ -1,7 +1,7 @@
 ---
 name: diego-buenos-dias
 description: Informe matutino con noticias, historia y ciencia — generado como audio para Telegram. Usa DeepSeek para investigación web delegando automáticamente.
-version: 4.0.0
+version: 4.1.0
 metadata:
   hermes:
     tags: [morning-briefing, news, audio, Telegram, TTS]
@@ -99,7 +99,9 @@ Con los resultados de los delegates (o sus placeholders), redactá el reporte en
 
 Guardar en: `~/.hermes/skills/diego-buenos-dias/output/YYYY-MM-DD.md`
 
-## Paso 3: Generar audio
+## Paso 3: Generar audio (OBLIGATORIO)
+
+**El tool `text_to_speech` DEBE ser llamado. No es opcional. No escribir la MEDIA tag sin generar el audio primero.**
 
 Usar `text_to_speech` de Hermes:
 - Provider: Edge TTS (configurado en `config.yaml:tts.provider`)
@@ -108,7 +110,21 @@ Usar `text_to_speech` de Hermes:
 
 El archivo `hoy.ogg` SIEMPRE se sobrescribe.
 
-**Manejo de errores TTS:** Si `text_to_speech` falla, intentar una versión más corta del texto (primera mitad). Si sigue fallando, guardar el reporte .md y reportar el error — el cron NO debe fallar en silencio.
+### Verificación obligatoria post-TTS
+
+**INMEDIATAMENTE** después de llamar a `text_to_speech`, verificá que el archivo fue creado:
+
+```
+1. Llamar a text_to_speech con el texto completo
+2. Verificar que ~/.hermes/skills/diego-buenos-dias/output/hoy.ogg existe (usar terminal: ls -la)
+3. Si NO existe → reintentar con texto más corto (primera mitad)
+4. Si sigue sin existir → reportar FALLO explícitamente en la respuesta
+5. Solo incluir la MEDIA tag SI el archivo fue verificado
+```
+
+**Regla de oro:** La MEDIA tag solo va en la respuesta SI el archivo物理icamente existe en el disco. Si el tool no se llamó o falló, no escribir la MEDIA tag.
+
+**Manejo de errores TTS:** Si `text_to_speech` falla, intentar una versión más corta del texto (primera mitad). Si sigue fallando, guardar el reporte .md y reportar el error explícitamente — el cron NO debe fallar en silencio ni inventar la MEDIA tag.
 
 **Importante:** La voz se configura en `~/.hermes/config.yaml` bajo `tts.edge.voice`. No se pasa como parámetro — el tool la lee de la config.
 
@@ -117,7 +133,7 @@ El archivo `hoy.ogg` SIEMPRE se sobrescribe.
 El audio se entrega incluyendo el MEDIA tag en la respuesta final del skill:
 
 ```
-MEDIA:/root/.hermes/skills/buenos-dias/output/hoy.ogg
+MEDIA:/root/.hermes/skills/diego-buenos-dias/output/hoy.ogg
 ```
 
 **Para cron jobs:** Cuando el cron corre en contexto autónomo (sin chat activo), el MEDIA tag se resuelve automáticamente si el cron tiene `deliver: "telegram"` configurado. El agent de Telegram detecta el MEDIA tag y lo entrega como nota de voz al home channel.
@@ -154,3 +170,4 @@ mcp_cronjob(
 - Si una fuente falla, continuar con las demás — no abortar
 - El cron NUNCA debe fallar en silencio — si el TTS falla, el .md se guarda igual
 - Para scheduling: `mcp_cronjob` daily a las 7 AM con skill `buenos-dias`
+- **Bug conocido:** MiniMax puede "alucinar" el call a text_to_speech — escribe la MEDIA tag sin ejecutar el tool. Para prevenir esto, el Paso 3 incluye verificación obligatoria post-TTS. Si el archivo no existe, reintentar o reportar fallo explícitamente.
