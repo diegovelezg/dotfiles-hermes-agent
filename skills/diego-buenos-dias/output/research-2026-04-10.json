@@ -1,0 +1,33 @@
+{
+  "date": "2026-04-10",
+  "sources": {
+    "twitter_ai_trends": null,
+    "historical_event": {
+      "name": "RMS Titanic Maiden Voyage",
+      "year": 1912,
+      "description": "The RMS Titanic sets sail from Southampton on her maiden (and final) voyage, carrying over 2,200 passengers and crew. She would sink five days later after striking an iceberg."
+    },
+    "techmeme": [
+      {
+        "headline": "Amazon CEO Andy Jassy's Annual Shareholder Letter",
+        "context": "Andy Jassy released his data-heavy shareholder letter defending Amazon's AI investments; AWS AI revenue hit $15B annual run rate."
+      },
+      {
+        "headline": "Florida AG Launches Investigation into OpenAI/ChatGPT",
+        "context": "Florida Attorney General James Uthmeier launched a probe citing potential national security risks and alleged connection to FSU mass shooting."
+      },
+      {
+        "headline": "EFF Leaves X Platform",
+        "context": "After nearly 20 years, the Electronic Frontier Foundation announced it's logging off X, stating X is no longer where the fight is happening."
+      }
+    ],
+    "science_daily": {
+      "headline": "Dragonflies can see a color humans can't and it could change medicine",
+      "summary": "Dragonflies may see the world in a way that pushes beyond human limits—and surprisingly, they do it using the same molecular trick we evolved ourselves. Scientists discovered that these insects can detect extremely deep red light, even edging into near-infrared, thanks to a specialized visual protein strikingly similar to the one in human eyes. This ability likely helps them spot mates mid-flight by picking up subtle differences in reflected light."
+    },
+    "bigthink": {
+      "headline": "3 ways to prove you're human online",
+      "relevance": "Aborda el desafío crítico de distinguir humanos de IA en línea, esencial para la seguridad digital y la autenticidad en la era de la IA."
+    }
+  }
+}
