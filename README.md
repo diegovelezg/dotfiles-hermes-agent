@@ -123,6 +123,61 @@ Estos archivos coexisten con el plugin. El plugin personal-ai es el SSOT para he
 
 ---
 
+## Skills Custom de Diego
+
+Las skills personalizadas viven en `~/.hermes/custom-skills/` y se restauran via symlinks en `~/.hermes/skills/`:
+
+| Skill | Descripción |
+|-------|-------------|
+| `diego-buenos-dias` | Informe matutino con TTS para Telegram |
+| `diego-read-it-later` | Extraer y guardar contenido de URLs |
+| `diego-research` | Investigación estructurada con hechos atómicos |
+| `diego-intel` | Briefing personalizado |
+
+---
+
+## Restauración Post-Update de Hermes
+
+**Problema:** Las updates de Hermes pueden sobrescribir `~/.hermes/skills/`, borrando los symlinks a las skills custom.
+
+**Solución:** Skills reales en `~/.hermes/custom-skills/` (directorio aislado), symlinks en `~/.hermes/skills/`.
+
+```bash
+# Después de cualquier update de Hermes:
+bash ~/.hermes/custom-skills/restore.sh
+
+# Verificar que están activas:
+hermes skills list | grep diego
+```
+
+**Estructura:**
+
+```
+~/.hermes/custom-skills/          ← Backup gitado (sobrevive a updates)
+  ├── diego-buenos-dias/
+  ├── diego-read-it-later/
+  ├── diego-research/
+  ├── diego-intel/
+  └── restore.sh                  ← Script de restauración
+
+~/.hermes/skills/                 ← Symlinks (Hermes puede sobrescribir)
+  ├── diego-buenos-dias → ~/.../custom-skills/diego-buenos-dias
+  ├── diego-read-it-later → ~/.../custom-skills/diego-read-it-later
+  ├── diego-research → ~/.../custom-skills/diego-research
+  └── productivity/diego-intel → ~/.../custom-skills/diego-intel
+```
+
+**Para sincronizar cambios al repo:**
+
+```bash
+cd ~/.hermes/custom-skills
+git add -A
+git commit -m "descripción del cambio"
+git push
+```
+
+---
+
 ## Modelos LLM
 
 | Rol | Modelo | Provider | Uso |
