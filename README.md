@@ -181,6 +181,25 @@ git push
 ## Modelos LLM
 
 | Rol | Modelo | Provider | Uso |
+
+**Repositorios remotos:**
+
+| Branch | Contenido |
+|--------|-----------|
+| `main` | Backup completo de `~/.hermes/` (configs, cron, gateway, plugins, skills nativas, outputs) |
+| `custom-skills` | Solo las skills custom de Diego (diego-buenos-dias, diego-read-it-later, diego-research, diego-intel) |
+
+**Para sincronizar cambios al repo:**
+
+```bash
+cd ~/.hermes/custom-skills
+git add -A
+git commit -m "descripción del cambio"
+git push
+```
+
+El branch `custom-skills` contiene únicamente las skills custom. El branch `main` tiene el backup completo.
+
 |-----|--------|----------|-----|
 | Agente principal | MiniMax-M2 | minimax | Conversación, coordinación, todas las tools |
 | Investigación pesada | DeepSeek-V3 | OpenRouter | Síntesis de temas complejos |
