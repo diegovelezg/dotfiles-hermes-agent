@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-04-05T14:00:41.677949",
+  "updated_at": "2026-05-03T02:17:23.378431",
   "platforms": {
     "discord": [
       {
@@ -45,28 +45,166 @@
         "thread_id": null
       },
       {
-        "id": "1488828110680883332:1488828110680883332",
-        "name": "Servidor de Diego / #agente / Por qué no está funcionando la comunicación por Telegram? / topic 1488828110680883332",
+        "id": "1491092137415147701:1491092137415147701",
+        "name": "Servidor de Diego / #investigación / Hay un alerror el issue que debes monitorear es 5508Y el reporte me lo debes... / topic 1491092137415147701",
         "type": "thread",
-        "thread_id": "1488828110680883332"
+        "thread_id": "1491092137415147701"
       },
       {
-        "id": "1474829285083578610",
-        "name": "Servidor de Diego / #notas",
+        "id": "1491135732604076289:1491135732604076289",
+        "name": "Servidor de Diego / #notas / usa el skill read it later / topic 1491135732604076289",
+        "type": "thread",
+        "thread_id": "1491135732604076289"
+      },
+      {
+        "id": "1474930661520310444",
+        "name": "Servidor de Diego / #agente",
         "type": "group",
         "thread_id": null
       },
       {
-        "id": "1489661845148143799:1489661845148143799",
-        "name": "Servidor de Diego / #notas / https://www.sciencealert.com/giant-study-reveals-why-some-viruses-hide-inside... / topic 1489661845148143799",
+        "id": "1491143828261048491:1491143828261048491",
+        "name": "Servidor de Diego / #agente / Ajusta la configuración apra que Discord no requiere mention para hablarte al... / topic 1491143828261048491",
         "type": "thread",
-        "thread_id": "1489661845148143799"
+        "thread_id": "1491143828261048491"
       },
       {
-        "id": "1490178427972489226:1490178427972489226",
-        "name": "Servidor de Diego / #notas / usa el skill intell-reader para almacenar https://www.sciencealert.com/new-u... / topic 1490178427972489226",
+        "id": "1491197858236596318:1491197858236596318",
+        "name": "Servidor de Diego / #agente / ANALIZA DETENIDAMENTE ESTE SKILL ANTIGUO Y PENSEMOS UNA MANERA DE CREAR UNA A... / topic 1491197858236596318",
         "type": "thread",
-        "thread_id": "1490178427972489226"
+        "thread_id": "1491197858236596318"
+      },
+      {
+        "id": "1491253935288225894:1491253935288225894",
+        "name": "Servidor de Diego / #agente / está actualizado hermes agent a la ultima version / topic 1491253935288225894",
+        "type": "thread",
+        "thread_id": "1491253935288225894"
+      },
+      {
+        "id": "1491257651643023480:1491257651643023480",
+        "name": "Servidor de Diego / #agente / agrega un item a todo de mi ledger que sea revisar y evaluar https://steel.de... / topic 1491257651643023480",
+        "type": "thread",
+        "thread_id": "1491257651643023480"
+      },
+      {
+        "id": "1491410150530220142:1491410150530220142",
+        "name": "Servidor de Diego / #investigación / Esto está mal. Ya te había dicho que no es ese el issue que me interesa. Re r... / topic 1491410150530220142",
+        "type": "thread",
+        "thread_id": "1491410150530220142"
+      },
+      {
+        "id": "1491414363125583872:1491414363125583872",
+        "name": "Servidor de Diego / #investigación / Agrega un todo item al kanban que trate sobre investigar https://github.com/g... / topic 1491414363125583872",
+        "type": "thread",
+        "thread_id": "1491414363125583872"
+      },
+      {
+        "id": "1491511816591904938:1491511816591904938",
+        "name": "Servidor de Diego / #investigación / INTERESANTEEEE HAY UN RELEASE NUEVO.. DIME QUÉ TRAE DE NUEVO Y SI ACASO HAN I... / topic 1491511816591904938",
+        "type": "thread",
+        "thread_id": "1491511816591904938"
+      },
+      {
+        "id": "1491520945188503773:1491520945188503773",
+        "name": "Servidor de Diego / #agente / HAZ COMIT Y PUSH DEL ESTADO ACTUAL DE CONFIGURACIÓN Y ARQUITECTURA AL REPO RE... / topic 1491520945188503773",
+        "type": "thread",
+        "thread_id": "1491520945188503773"
+      },
+      {
+        "id": "1491521927129337876:1491521927129337876",
+        "name": "Servidor de Diego / #agente / ACTUALIZA LA VERSIÓNDE HERMES Y HAZ REBOOT DEL VPS / topic 1491521927129337876",
+        "type": "thread",
+        "thread_id": "1491521927129337876"
+      },
+      {
+        "id": "1491592823869542600:1491592823869542600",
+        "name": "Servidor de Diego / #investigación / qué sabemos sobre stemcells o celulas madre o medicina regenerativa? / topic 1491592823869542600",
+        "type": "thread",
+        "thread_id": "1491592823869542600"
+      },
+      {
+        "id": "1491920776750698617:1491920776750698617",
+        "name": "Servidor de Diego / #investigación / PREGUNTA, NO TENEMOS ACASO CRONJOBS PARA LOS SHOPPING O PRICE SCOUT? / topic 1491920776750698617",
+        "type": "thread",
+        "thread_id": "1491920776750698617"
+      },
+      {
+        "id": "1493221768909815999:1493221768909815999",
+        "name": "Servidor de Diego / #agente / Hay algún update pendiente de Hermes agent? / topic 1493221768909815999",
+        "type": "thread",
+        "thread_id": "1493221768909815999"
+      },
+      {
+        "id": "1493237292830031952:1493237292830031952",
+        "name": "Servidor de Diego / #notas / https://www.iflscience.com/in-2018-the-worlds-largest-wild-chimpanzee-group-s... / topic 1493237292830031952",
+        "type": "thread",
+        "thread_id": "1493237292830031952"
+      },
+      {
+        "id": "1493427107173236836:1493427107173236836",
+        "name": "Servidor de Diego / #agente / ANTES DE QUE ACTUALICEMOS A LA VERS MÁS RECIENTE DE HERMES, ASEGÚRATE DE QUE ... / topic 1493427107173236836",
+        "type": "thread",
+        "thread_id": "1493427107173236836"
+      },
+      {
+        "id": "1493651568786935901:1493651568786935901",
+        "name": "Servidor de Diego / #investigación / agrega al shopping scput esta busqueda https://xiaomiproductosperu.com/produc... / topic 1493651568786935901",
+        "type": "thread",
+        "thread_id": "1493651568786935901"
+      },
+      {
+        "id": "1494624922557874271:1494624922557874271",
+        "name": "Servidor de Diego / #agente / Hay una versión nueva de Hermes? Actualiza / topic 1494624922557874271",
+        "type": "thread",
+        "thread_id": "1494624922557874271"
+      },
+      {
+        "id": "1495810689686831188:1495810689686831188",
+        "name": "Servidor de Diego / #notas / https://www.sciencealert.com/nature-might-pulse-to-a-universal-rhythm-2-beats... / topic 1495810689686831188",
+        "type": "thread",
+        "thread_id": "1495810689686831188"
+      },
+      {
+        "id": "1497062021752160318:1497062021752160318",
+        "name": "Servidor de Diego / #agente / Hay un update de Hermes agent? / topic 1497062021752160318",
+        "type": "thread",
+        "thread_id": "1497062021752160318"
+      },
+      {
+        "id": "1498487577659965520:1498487577659965520",
+        "name": "Servidor de Diego / #agente / EN ALGUNA PAARTE TENEMOS CONFIGURADO DEEPSEEK, VERDAD? REVISA, DIME D{ONDE Y ... / topic 1498487577659965520",
+        "type": "thread",
+        "thread_id": "1498487577659965520"
+      },
+      {
+        "id": "1498494343802130524:1498494343802130524",
+        "name": "Servidor de Diego / #agente / VAMOS A AJUSTAR EL SKILL DE BUENS DIAS. ESPECÍFICAMENTE EN UN DÍA EN LA HISTO... / topic 1498494343802130524",
+        "type": "thread",
+        "thread_id": "1498494343802130524"
+      },
+      {
+        "id": "1499433005922390220:1499433005922390220",
+        "name": "Servidor de Diego / #investigación / NAVEGA POR EL SITIO Y ENCUENTRA LAS DEFINICIONES DE ESTÁNDARES DE CONECTIVIDA... / topic 1499433005922390220",
+        "type": "thread",
+        "thread_id": "1499433005922390220"
+      },
+      {
+        "id": "1499509139909378229:1499509139909378229",
+        "name": "Servidor de Diego / #investigación / necesito un crm bueno, bonito y barato, que me permita recibir mediante api m... / topic 1499509139909378229",
+        "type": "thread",
+        "thread_id": "1499509139909378229"
+      },
+      {
+        "id": "1499516911661350912:1499516911661350912",
+        "name": "Servidor de Diego / #agente / hay un pdate de hermes agent, revisa y actualicemos!!!! / topic 1499516911661350912",
+        "type": "thread",
+        "thread_id": "1499516911661350912"
+      },
+      {
+        "id": "1499851137422196796:1499851137422196796",
+        "name": "Servidor de Diego / #agente / Estás ahí? / topic 1499851137422196796",
+        "type": "thread",
+        "thread_id": "1499851137422196796"
       }
     ],
     "telegram": [
@@ -78,8 +216,22 @@
       }
     ],
     "whatsapp": [],
+    "slack": [],
     "signal": [],
+    "mattermost": [],
+    "matrix": [],
+    "homeassistant": [],
     "email": [],
-    "sms": []
+    "sms": [],
+    "dingtalk": [],
+    "feishu": [],
+    "wecom": [],
+    "wecom_callback": [],
+    "weixin": [],
+    "bluebubbles": [],
+    "qqbot": [],
+    "yuanbao": [],
+    "irc": [],
+    "teams": []
   }
 }

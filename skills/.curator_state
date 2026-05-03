@@ -1,0 +1,8 @@
+{
+  "last_report_path": "/root/.hermes/logs/curator/20260430-222844",
+  "last_run_at": "2026-04-30T22:28:44.205664+00:00",
+  "last_run_duration_seconds": 306.070603,
+  "last_run_summary": "auto: no changes; llm: Here is the complete consolidation report:\n\n---\n\n## Human Summary\n\n### Clusters Processed\n\n**Cluster 1 — `diego-*` (3 siblings → 1 umbrella)**\nThe three Spanish-language intelligence skills (`diego-buenos-dias`, `diego-read-it-later`, `dieg…",
+  "paused": false,
+  "run_count": 1
+}

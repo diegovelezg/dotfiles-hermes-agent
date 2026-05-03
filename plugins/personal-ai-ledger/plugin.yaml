@@ -10,6 +10,14 @@ author: Diego Vélez
 pip_dependencies:
   - httpx
 
+provides_tools:
+  - ledger_query
+  - ledger_item_create
+  - ledger_bulk_action
+  - briefing_generate
+  - browser_activity_add
+  - browser_activity_query
+
 config_fields:
   - key: user_id
     description: Platform user ID for personal-ai (Telegram user ID)

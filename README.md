@@ -365,26 +365,123 @@ Template público: `configs/.env.example`
 
 ---
 
+## Custom Skills (Skills Personales de Diego)
+
+Los skills personales de Diego viven en el repo de dotfiles: `~/dotfiles-hermes-agent/skills/`.
+
+### Estrategia by the book — `external_dirs`
+
+Hermes permite declarar directorios externos de skills en `config.yaml`. Estos se escanean automáticamente sin necesidad de symlinks ni restore scripts.
+
+**`~/.hermes/config.yaml`:**
+```yaml
+skills:
+  external_dirs:
+    - ~/dotfiles-hermes-agent/skills
+```
+
+Los skills de `external_dirs` son **read-only** para Hermes. Aparecen en `/skill`, `skills_list` y `skill_view` exactamente igual que los locales. Si un skill existe en ambos directorios, la versión local (`~/.hermes/skills/`) tiene precedencia.
+
+### Skills personales de Diego
+
+```
+~/dotfiles-hermes-agent/skills/
+├── diego-buenos-dias/       ← informe matutino
+├── diego-intel/             ← research +情报 workflow
+├── diego-read-it-later/     ← extrae y resume URLs
+└── diego-research/          ← investigación dialectal y fractal
+```
+
+### Después de un update de Hermes
+
+**Skills**: No requieren acción. `external_dirs` en `config.yaml` los descubre automáticamente.
+
+**Solo si actualizaste Hermes desde cero** (sin restaurar config), volvé a agregar `external_dirs` en el `config.yaml` del repo.
+
+### Agregar un nuevo skill personal
+
+```bash
+# 1. Crear en el repo de dotfiles
+mkdir -p ~/dotfiles-hermes-agent/skills/mi-nuevo-skill
+# crear SKILL.md adentro
+
+# 2. Verificar que aparece (requiere /reset o nueva sesión)
+hermes skills list | grep mi-nuevo-skill
+
+# 3. Commitear
+cd ~/dotfiles-hermes-agent
+git add skills/mi-nuevo-skill
+git commit -m "add: mi-nuevo-skill"
+git push
+```
+
+---
+
+## Custom Plugins (Plugins Personales de Diego)
+
+Los plugins `personal-ai-memory` y `personal-ai-ledger` se respaldan en el repo de dotfiles. A diferencia de los skills, **no existe `external_dirs` para plugins** — Hermes no tiene forma de declararlos fuera de `~/.hermes/plugins/`. Después de cada update de Hermes es necesario restaurarlos.
+
+### Estrategia de supervivencia a updates
+
+```
+~/dotfiles-hermes-agent/        ← backup en repo git
+    ├── plugins/
+    │   ├── personal-ai-memory/
+    │   └── personal-ai-ledger/
+    └── scripts/
+        └── restore.sh           ← restauración post-update
+
+~/.hermes/plugins/               ← destino final (se wipea en updates)
+    ├── personal-ai-memory/
+    └── personal-ai-ledger/
+```
+
+### ¿Por qué no `external_dirs` para plugins?
+
+La documentación de Hermes es clara: skills soporta `external_dirs`; plugins no. Los plugins son Python packages con `import` dinámico, y Hermes los descubre únicamente escaneando `~/.hermes/plugins/`.
+
+### Setup inicial
+
+```bash
+# 1. Asegurate de que los plugins están en el repo
+ls ~/dotfiles-hermes-agent/plugins/
+
+# 2. Restaurar (solo necesario si Hermes ya wipeó ~/.hermes/plugins/)
+bash ~/dotfiles-hermes-agent/scripts/restore.sh
+```
+
+### Después de un update de Hermes
+
+```bash
+bash ~/dotfiles-hermes-agent/scripts/restore.sh
+```
+
+Verificá con:
+```bash
+hermes plugins list | grep personal-ai
+```
+
+---
+
 ## Estructura del Repo
 
 ```
 dotfiles-hermes-agent/
 ├── configs/
-│   ├── config.yaml          # Config principal (sin secrets)
+│   ├── config.yaml          # Config principal (external_dirs para skills)
 │   ├── .env.example         # Template de variables
 │   └── gateway_*.json       # Estado de canales
 ├── plugins/
-│   ├── memory/
-│   │   └── personal-ai/     # Plugin memory — solo tools de memoria
-│   │       ├── __init__.py  # PersonalAIMemoryProvider + PersonalAIClient
-│   │       ├── plugin.yaml  # Metadata + pip_dependencies
-│   │       └── README.md    # Documentación del plugin
-│   └── personal-ai-ledger/   # Plugin ledger — tools de ledger/briefing/browser
-│       ├── __init__.py      # PersonalAILedgerProvider + PersonalAIClient
-│       └── plugin.yaml      # Metadata
-├── skills/                  # 29 skills instalados
+│   ├── personal-ai-memory/  # Plugin memory provider
+│   └── personal-ai-ledger/ # Plugin ledger/briefing tools
+├── skills/                  # Skills custom de Diego (via external_dirs)
+│   ├── diego-buenos-dias/
+│   ├── diego-intel/
+│   ├── diego-read-it-later/
+│   └── diego-research/
 ├── scripts/
-│   └── backup.sh            # Backup idempotente
+│   ├── backup.sh            # Backup idempotente
+│   └── restore.sh           # Restaurar plugins post-update
 ├── patches/
 │   └── brave-search.patch   # Patch para tools/web_tools.py
 └── docs/
@@ -410,6 +507,8 @@ dotfiles-hermes-agent/
 6. **SDK rewrite test memory**: existe físicamente en Mem0 pero no puede borrarse via MCP server (bug: IDs de search no resuelven en Mem0 update/delete). Filtrada client-side en prefetch y search. Solo afecta al plugin de memory.
 7. **Hooks**: no hay hooks activos. El directorio `hooks/` está vacío.
 8. **Sandboxes**: sin imágenes. El directorio `sandboxes/` está vacío.
+9. **Custom skills**: se cargan via `external_dirs` en `config.yaml`. No necesitan restore post-update.
+10. **Custom plugins**: `personal-ai-memory` y `personal-ai-ledger` se respaldan en el repo. Post-update: `bash ~/dotfiles-hermes-agent/scripts/restore.sh`.
 
 ---
 
@@ -418,6 +517,9 @@ dotfiles-hermes-agent/
 ```bash
 # Backup de configs y skills
 ./scripts/backup.sh
+
+# Restaurar plugins personal-ai después de un update de Hermes
+bash ~/dotfiles-hermes-agent/scripts/restore.sh
 
 # Ver estado del gateway
 systemctl --user status hermes-gateway
@@ -428,8 +530,11 @@ journalctl --user -u hermes-gateway -f
 # Reiniciar después de cambios
 systemctl --user restart hermes-gateway
 
-# Verificar tools disponibles
-hermes tools list
+# Verificar plugins
+hermes plugins list | grep personal-ai
+
+# Verificar skills
+hermes skills list | grep diego
 
 # Ver estado de memory providers
 hermes doctor

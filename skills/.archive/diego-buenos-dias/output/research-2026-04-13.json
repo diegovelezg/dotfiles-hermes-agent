@@ -1,0 +1,39 @@
+{
+  "date": "2026-04-13",
+  "sources": {
+    "twitter_ai": {
+      "status": "ok",
+      "data": ["AI", "ChatGPT", "Grok Computer", "OpenAI", "Machine Learning"]
+    },
+    "onthisday": {
+      "status": "ok",
+      "data": {
+        "name": "Handel's Messiah premieres in Dublin",
+        "year": 1742,
+        "description": "George Frideric Handel presents for the first time his oratorio \"El Mesías\" in the Music Hall of Dublin, Ireland. The work would become one of the most performed sacred compositions in the world."
+      }
+    },
+    "techmeme": {
+      "status": "ok",
+      "data": [
+        {"headline": "Apple Smart Glasses: Four Designs in Testing", "context": "Apple prueba cuatro diseños de gafas inteligentes con IA, apuntando a lanzamiento en 2027 y compitiendo con Meta Ray‑Bans."},
+        {"headline": "Sam Altman Attacked: Second Incident at OpenAI CEO's Home", "context": "Segundo ataque a la casa de Sam Altman en dos días; disparos desde un auto tras un cóctel Molotov, vinculado a temores de extinción por IA."},
+        {"headline": "Anthropic Claude Mythos: Too Dangerous to Release", "context": "El nuevo modelo Mythos de Anthropic encontró 198 vulnerabilidades zero‑day graves, provocando advertencias regulatorias en UK y US."}
+      ]
+    },
+    "sciencedaily": {
+      "status": "ok",
+      "data": {
+        "headline": "Hidden 'Drain' Discovered in Human Brain",
+        "summary": "Investigadores han identificado un sistema de drenaje oculto en el cerebro humano, donde el fluido circula lentamente a lo largo de la arteria meníngea media en un patrón similar al linfático. Esta vía actúa como una ruta de eliminación de desechos y fue capturada mediante resonancias magnética de última generación."
+      }
+    },
+    "bigthink": {
+      "status": "ok",
+      "data": {
+        "headline": "Gravity and quantum physics are fundamentally incompatible",
+        "why": "Aborda uno de los problemas más profundos y sin resolver de la física moderna: la incompatibilidad entre la relatividad general y la mecánica cuántica, lo que impide una teoría unificada del universo."
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "twitter_ai": null,
+  "historical": {
+    "name": "Terremoto de San Francisco de 1906",
+    "year": "1906",
+    "description": "Un terremoto devastador y los incendios subsiguientes causaron cerca de 4,000 muertes y destruyeron el 75% de la ciudad de San Francisco, dejando a más de 200,000 personas sin hogar."
+  },
+  "techmeme": [
+    {
+      "headline": "Kevin Weil, ex-CPO de OpenAI y VP de OpenAI for Science, abandona la compañía; Prism, una app web para científicos lanzada en enero, será cerrada",
+      "context": "El exVP de Instagram deja ChatGPT-maker, que está integrando la aplicación de IA científica que él lideraba en Codex."
+    },
+    {
+      "headline": "Bill Peebles, investigador detrás de Sora, deja OpenAI junto con Srinivas Narayanan, CTO de aplicaciones empresariales de OpenAI",
+      "context": "OpenAI pierde a dos de los arquitectos de sus proyectos más ambiciosos. Kevin Weil lideraba la iniciativa de investigación científica."
+    },
+    {
+      "headline": "La Casa Blanca dice que una reunión entre el Jefe de Gabinete Susie Wiles y Dario Amodei fue 'productiva y constructiva'; fuente: Scott Bessent se unió a la reunión",
+      "context": "El Secretario del Tesoro se unió a la reunión del viernes entre el Jefe de Gabinete de la Casa Blanca y el CEO de Anthropic."
+    }
+  ],
+  "science": {
+    "headline": "Artificial Neurons Successfully Communicate with Living Brain Cells",
+    "summary": "Ingenieros de Northwestern University han dado un salto remarkable hacia la fusión de máquinas con el cerebro humano, creando neuronas artificiales impresas que pueden comunicarse con células cerebrales reales. Estos dispositivos flexibles y de bajo costo generan señales eléctricas realistas, abriendo el camino para futuras interfaces cerebro-máquina."
+  },
+  "bigthink": {
+    "headline": "There is no you in your brain — your identity is a 'society of the mind'",
+    "relevance": "Desafía la noción de un yo unitario y explora cómo la identidad emerge de procesos cognitivos interdependientes, relevante para neurociencia y filosofía de la mente."
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "date": "2026-04-12",
+  "sources": {
+    "twitter_ai": null,
+    "onthisday": {
+      "event": "First human spaceflight (Vostok 1)",
+      "year": "1961",
+      "description": "Soviet cosmonaut Yuri Gagarin becomes the first human to travel into space and orbit Earth, aboard the Vostok 1 spacecraft."
+    },
+    "techmeme": [
+      {
+        "headline": "Sources: Anthropic met with Christian leaders in March to seek input on Claude's moral and spiritual development and if it could be considered a 'child of God'",
+        "context": "The artificial intelligence company asked religious leaders for guidance on building a moral chatbot."
+      },
+      {
+        "headline": "Google says Polymarket bets 'briefly appeared in Google News in error', after the bets appeared alongside news articles in the 'For You' section",
+        "context": "Links to bets on world events were appearing alongside legitimate news organizations."
+      },
+      {
+        "headline": "Flipkart and Amazon's quick commerce push in India is intensifying competition in an already crowded space where profitability remains under pressure",
+        "context": "India's quick commerce market is booming, with demand more than doubling for some players."
+      }
+    ],
+    "sciencedaily": {
+      "headline": "Life on Mars? Tiny Cells Just Survived Shock Waves and Toxic Soil",
+      "summary": "Mars may be hostile, but it might not be entirely unlivable. In lab experiments, yeast cells survived simulated Martian shock waves and toxic perchlorate salts—two major environmental threats on the Red Planet."
+    },
+    "bigthink": {
+      "headline": "If life exists on Mars, it's likely hiding — or maybe sleeping",
+      "why": "Examines how microbial life could have survived extreme Martian conditions, with direct implications for astrobiology and the search for extraterrestrial life."
+    }
+  }
+}

@@ -44,10 +44,11 @@ De las URLs relevantes, usar `web_extract` para obtener el contenido de cada una
 - **Soles:** `S/\s*([\d.,]+)`
 - **USD:** `\$\s*([\d.,]+)`
 
-Usar el script para procesar los resultados:
+Usar `scripts/check_prices.py` para procesar los resultados — invocar vía `terminal` (no `execute_code`, ver Pits):
 ```
-execute_code → scripts/check_prices.py → prices + domains
+terminal(command="python3 /tmp/check_prices.py ...")
 ```
+Alternativamente, escribir el script a `/tmp/` fresco cada vez con `write_file` y ejecutarlo con `terminal`.
 
 ## Paso 4: Cargar historial previo
 
@@ -149,3 +150,11 @@ mcp_cronjob(
 - `.env` leer de `~/.hermes/.env` si se necesitan API keys
 - El ID del query se genera sanitizando el query: espacios → guiones, caracteres especiales removidos
 - Los reportes van a `origin` (chat actual) por defecto
+
+## Pits / Problemas conocidos
+
+### Python sandbox caching (execute_code / terminal)
+El sandbox de `execute_code` mantiene cache del script entre ejecuciones si el contenido es idéntico o si se usa la misma ruta de archivo (`/tmp/...`). **Solución:** al re-ejecutar un script modificado, usar una ruta nueva cada vez, o usar `terminal` con `python3 /dev/stdin << 'PYEOF'` (heredoc), o escribir el archivo con `write_file` y ejecutar desde ahí. Esto aplica tanto a `execute_code` como a `terminal` cuando llaman scripts Python.
+
+### Múltiples queries en un solo reporte (cron)
+Cuando se monitorean múltiples queries activas en una sola ejecución, **generar un reporte separado por producto** (con su propio bloque 🛒). No combinar todos los productos en un solo reporte — cada query es independiente y el usuario quiere ver cambios individuales. Ver ejemplo de formato en Paso 7.
