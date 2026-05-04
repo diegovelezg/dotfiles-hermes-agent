@@ -1,0 +1,5 @@
+Diego tiene un repo en GitHub (diegovelezg/dotfiles-hermes-agent, branch master) donde guarda todas sus configuraciones personales de infraestructura ydotfiles. El repo contiene sus skills personalizados de Hermes (diego-buenos-dias, diego-read-it-later) y está versionado con git. Los skills native de Hermes NO se incluyen — solo los de Diego.
+§
+Hermes Agent está actualizado a la última versión (confirmado por Diego, abril 2026)
+§
+Para preguntas sobre Diego — relaciones personales, contactos, preferencias, datos de su vida, identidades (ej: quién es Lena, Lalo, etc.) — usar la herramienta `memory` (herramienta nativa del agent, configurada con provider=personal-ai que sincroniza con el servidor Mem0 en papelitosdecolor.com). NO usar `session_search` para esto. Los hechos personales (contadora, preferencias, relaciones, etc.) viven en Personal AI/Mem0, no en transcripciones de chat.
