@@ -48,56 +48,39 @@ Usuario (Telegram / Discord)
 
 ## Sistema de Memoria
 
-###SSOT: personal-ai MCP (Mem0)
+**SSOT: personal-ai MCP (Mem0)**
 
-Ambos plugins comparten una única conexión SSE al servidor MCP `uaimcp.papelitosdecolor.com`.
+Todos los hechos sobre Diego, sus relaciones, preferencias y contexto personal viven en Mem0 (servidor `uaimcp.papelitosdecolor.com`). La tool `memory` escribe a archivos locales (`~/.hermes/memories/MEMORY.md`, `USER.md`) que sincronizan con Mem0.
 
 ```
 MemoryManager
-    ├── BuiltinMemoryProvider        ← MEMORY.md / USER.md
-    │    (archivos planos para notas de sesión)
-    │
-    └── PersonalAIMemoryProvider   ← plugins/personal-ai-memory/
-         │                          SSE → personal-ai MCP
-         ├── prefetch()             → recall semántico al inicio
-         ├── system_prompt_block()  → instrucciones en el prompt
-         ├── get_tool_schemas()     → 2 tools de memoria
-         └── handle_tool_call()     → dispatch directo al MCP
+    ├── BuiltinMemoryProvider   → MEMORY.md / USER.md (archivos planos)
+    └── PersonalAIMemoryProvider → plugins/personal-ai-memory/
+                                  SSE → personal-ai MCP → Mem0
 
-PersonalAILedgerProvider             ← plugins/personal-ai-ledger/
-     ├── get_tool_schemas()     → 6 tools ledger/briefing/browser
-     └── handle_tool_call()
+PersonalAILedgerProvider        → plugins/personal-ai-ledger/
 ```
+
+### Plugins
+
+| Plugin | Tools | Descripción |
+|--------|-------|-------------|
+| `personal-ai-memory` | `personal_ai_memories_search`, `personal_ai_memories_manage` | Búsqueda y gestión de memorias |
+| `personal-ai-ledger` | `ledger_query`, `ledger_item_create`, `ledger_bulk_action`, `briefing_generate`, `browser_activity_*` | Items action/intel + briefings |
 
 ### Tipos de memoria en Mem0
 
-| Tipo | Descripción | Ejemplo |
-|------|-------------|---------|
-| `know` | Hechos persistentes | proyectos, personas, preferencias |
-| `policy` | Reglas operativas | "Diego prefiere español, sin markdown en Telegram" |
-| `episodic` | Eventos pasados | "Grupos focales completados 2-3 abr 2026" |
-
-### Plugin memory — tools
-
-| Tool | Descripción |
+| Tipo | Descripción |
 |------|-------------|
-| `personal_ai_memories_search` | Búsqueda semántica sobre know/policy/episodic |
-| `personal_ai_memories_manage` | Crear, actualizar, deprecar memorias |
-
-### Plugin ledger — tools
-
-| Tool | Descripción |
-|------|-------------|
-| `ledger_query` | Consultar items del ledger (action/intel) |
-| `ledger_item_create` | Crear item en el ledger |
-| `ledger_bulk_action` | Bulk update/archive de items |
-| `briefing_generate` | Generar briefing estructurado desde ledger |
-| `browser_activity_add` | Registrar actividad de navegación |
-| `browser_activity_query` | Consultar historial de navegación |
+| `know` | Hechos persistentes — proyectos, personas, preferencias |
+| `policy` | Reglas operativas — "Diego prefiere español informal" |
+| `episodic` | Eventos pasados — "Grupos focales completados 2-3 abr 2026" |
 
 ---
 
 ## Skills Custom
+
+Los 4 skills de Diego se cargan via `external_dirs` en `config.yaml`. **Sobreviven a `hermes update`** — no necesitan restore.
 
 | Skill | Descripción |
 |-------|-------------|
@@ -106,7 +89,13 @@ PersonalAILedgerProvider             ← plugins/personal-ai-ledger/
 | `diego-research` | Investigación estructurada con hechos atómicos |
 | `diego-intel` | Briefing personalizado + workflow de investigación |
 
-Se cargan via `external_dirs` en `config.yaml` — sobreviven a updates de Hermes sin necesidad de restore.
+---
+
+## Cron Jobs
+
+| Job | Schedule | Delivery | Descripción |
+|-----|----------|----------|-------------|
+| Buenos Días (`a5976debdb34`) | Daily 7:00 AM Lima | Telegram | Informe con histórico, Techmeme, AI Twitter, ScienceDaily, BigThink |
 
 ---
 
@@ -120,112 +109,79 @@ Se cargan via `external_dirs` en `config.yaml` — sobreviven a updates de Herme
 3. Síntesis con DeepSeek-V3 via OpenRouter
 ```
 
-### Web Search — Backends
-
-`web_search` usa Exa por defecto → Brave como fallback automático.
-
-```bash
-EXA_API_KEY=***
-BRAVE_API_KEY=***
-```
-
-> **Nota Brave:** Necesita plan "Data for Search" (no "Data for AI"). Keys `BSA*` del plan AI no funcionan.
-
----
-
-## Gateway y Plataformas
-
-### Startup
-
-```bash
-# Con systemd
-systemctl --user start hermes-gateway
-systemctl --user enable hermes-gateway
-
-# Logs
-journalctl --user -u hermes-gateway -f
-
-# Restart después de cambios
-systemctl --user restart hermes-gateway
-```
-
----
-
-## Cron Jobs
-
-### Buenos Días
-
-- **Job ID:** `20257ad8ddf4`
-- **Schedule:** Daily 7:00 AM Lima (12 UTC)
-- **Delivery:** Telegram
-- **Sources:** Histórico, Techmeme, AI Twitter, ScienceDaily, BigThink
-- **Output:** `skills/diego-buenos-dias/output/hoy.ogg` + `.md` con fecha
+> **Nota Brave (fallback):** Necesita plan "Data for Search" — keys `BSA*` del plan AI no funcionan.
 
 ---
 
 ## Configuración
 
-### `~/.hermes/config.yaml`
-
-```yaml
-model: "minimax/minimax-v06"
-provider: "minimax"
-
-web:
-  backend: exa
-
-delegation:
-  provider: "openrouter"
-  model: "deepseek/deepseek-chat-v3"
-
-display:
-  model: "anthropic/claude-sonnet-4"
-
-gateway:
-  platform: telegram
-  telegram:
-    bot_token: "${TELEGRAM_BOT_TOKEN}"
-
-memory:
-  provider: personal-ai
-
-skills:
-  external_dirs:
-    - ~/dotfiles-hermes-agent/skills
-```
-
-### `~/.hermes/.env` (nunca subir al repo)
+### Setup inicial en máquina nueva
 
 ```bash
-MINIMAX_API_KEY=***
-OPENROUTER_API_KEY=***
-EXA_API_KEY=***
-BRAVE_API_KEY=***
-PERSONAL_AI_API_KEY=***
+# 1. Clonar repo
+git clone https://github.com/diegovelezg/dotfiles-hermes-agent.git ~/dotfiles-hermes-agent
+
+# 2. Copiar .env y completar API keys
+cp dotfiles-hermes-agent/.env.example ~/.hermes/.env
+# Editar ~/.hermes/.env con las API keys reales
+
+# 3. Restaurar plugins personal-ai (no survive updates)
+bash ~/dotfiles-hermes-agent/scripts/restore.sh
+
+# 4. Verificar
+hermes plugins list | grep personal-ai
+hermes skills list  | grep diego
+hermes doctor
+```
+
+### `~/.hermes/.env` (nunca commitear)
+
+```bash
+MINIMAX_API_KEY=
+OPENROUTER_API_KEY=
+EXA_API_KEY=
+PERSONAL_AI_API_KEY=
 PERSONAL_AI_BASE_URL=https://uaimcp.papelitosdecolor.com
 PERSONAL_AI_REMOTE_URL=https://uaimcp.papelitosdecolor.com/sse
 PERSONAL_AI_USER_ID=1093162286
-TELEGRAM_BOT_TOKEN=***
-DISCORD_BOT_TOKEN=***
+TELEGRAM_BOT_TOKEN=
+DISCORD_BOT_TOKEN=
 ```
 
 Template público: `configs/.env.example`
 
+### `~/.hermes/config.yaml`
+
+Modelos, providers, skills `external_dirs`, y plugins activos. **Este repo versiona `configs/config.yaml`** — copiar a `~/.hermes/config.yaml` para mantener la config sincronizada.
+
+### SOUL.md
+
+Define la personalidad del agente. Actualmente: **kawaii**. Editar en `SOUL.md` y references en `configs/` via symlink.
+
 ---
 
-## Restauración Post-Update
+## Post-Update de Hermes
 
-### Skills (automático)
-
-No requieren acción. `external_dirs` en `config.yaml` los descubre automáticamente después de cualquier update.
-
-### Plugins personal-ai (requiere script)
-
-Los plugins **no** soportan `external_dirs`. Después de un update de Hermes:
+`hermes update` reinstala hermes-agent y **wipea** `~/.hermes/plugins/`. Los plugins personal-ai se pierden.
 
 ```bash
+# Restaurar plugins
 bash ~/dotfiles-hermes-agent/scripts/restore.sh
+
+# Verificar
 hermes plugins list | grep personal-ai
+```
+
+Skills via `external_dirs` no necesitan acción — se recargan automáticamente.
+
+---
+
+## Backup
+
+```bash
+# Backup de configs, plugins y skills al repo
+bash ~/dotfiles-hermes-agent/scripts/backup.sh
+cd ~/dotfiles-hermes-agent && git push
 ```
 
 ---
@@ -235,31 +191,30 @@ hermes plugins list | grep personal-ai
 ```
 dotfiles-hermes-agent/
 ├── configs/
-│   ├── config.yaml          # Config principal
-│   ├── .env.example         # Template de variables
+│   ├── config.yaml              # Config principal de Hermes
+│   ├── .env.example             # Template de variables (sin secrets)
+│   ├── MEMORY.md                # Memorias del agente (symlinked desde ~/.hermes/memories/)
+│   ├── USER.md                  # Perfil del usuario (symlinked)
 │   ├── channel_directory.json
 │   ├── discord_threads.json
 │   └── gateway_state.json
-├── cron/
-│   ├── jobs.json            # Jobs programados
-│   └── scheduler.py
-├── gateway/
-│   ├── run.py
-│   └── builtin_hooks/
-│       ├── personal_ai_client.py
-│       └── personal_ai_memory_provider.py
-├── plugins/
-│   ├── personal-ai-memory/  # Plugin memory provider (Mem0)
-│   └── personal-ai-ledger/  # Plugin ledger/briefing tools
-├── scripts/
-│   ├── backup.sh            # Backup idempotente
-│   └── restore.sh           # Restaurar plugins post-update
 ├── skills/
-│   ├── diego-buenos-dias/   # + output/
+│   ├── diego-buenos-dias/       # Skill custom — survives via external_dirs
 │   ├── diego-intel/
 │   ├── diego-read-it-later/
-│   └── diego-research/      # + facts/ + output/
-├── SOUL.md                  # Identidad del agente
+│   └── diego-research/
+├── plugins/
+│   ├── personal-ai-memory/      # Plugin memory provider (post-update: restore.sh)
+│   └── personal-ai-ledger/      # Plugin ledger/briefing
+├── cron/
+│   └── jobs.json                # Buenos Días job
+├── gateway/builtin_hooks/
+│   ├── personal_ai_client.py
+│   └── personal_ai_memory_provider.py
+├── scripts/
+│   ├── backup.sh
+│   └── restore.sh
+├── SOUL.md                      # Personalidad del agente
 └── README.md
 ```
 
@@ -268,29 +223,18 @@ dotfiles-hermes-agent/
 ## Comandos Útiles
 
 ```bash
-# Backup de configs y plugins
+# Backup
 ./scripts/backup.sh
 
-# Restaurar plugins después de update de Hermes
+# Restaurar plugins post-update
 bash ~/dotfiles-hermes-agent/scripts/restore.sh
 
-# Ver estado del gateway
-systemctl --user status hermes-gateway
-journalctl --user -u hermes-gateway -f
+# Gateway
 systemctl --user restart hermes-gateway
+journalctl --user -u hermes-gateway -f
 
-# Verificar plugins y skills
+# Diagnóstico
 hermes plugins list | grep personal-ai
-hermes skills list | grep diego
-
-# Doctor
+hermes skills list  | grep diego
 hermes doctor
 ```
-
----
-
-## Notas
-
-1. **API Keys** — nunca subirlas. Usar `configs/.env.example` como template.
-2. **Plugins** — `personal-ai-memory` y `personal-ai-ledger` se respaldan en el repo. Post-update: `restore.sh`.
-3. **Skills** — se cargan via `external_dirs`. No necesitan restore post-update.
