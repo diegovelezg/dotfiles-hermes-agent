@@ -1,5 +1,5 @@
 ---
-name: shopping-scout
+name: diego-shopping-scout
 description: Monitorea y compara precios de cualquier producto o servicio usando búsqueda web y extracción de contenido. Genera reportes con tendencias y cambios.
 version: 1.0.0
 metadata:
