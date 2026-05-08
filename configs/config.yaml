@@ -315,7 +315,7 @@ delegation:
 prefill_messages_file: ''
 skills:
   external_dirs:
-    - ~/dotfiles-hermes-agent/skills
+  - ~/dotfiles-hermes-agent/skills
   template_vars: true
   inline_shell: false
   inline_shell_timeout: 10
@@ -351,12 +351,13 @@ approvals:
   cron_mode: deny
   mcp_reload_confirm: true
 command_allowlist:
-- recursive delete
+- stop/restart system service
+- script execution via -e/-c flag
+- git force push (rewrites remote history)
 - stop/restart hermes gateway (kills running agents)
 - kill hermes/gateway process (self-termination)
 - hermes update (restarts gateway, kills running agents)
-- script execution via -e/-c flag
-- stop/restart system service
+- recursive delete
 quick_commands: {}
 hooks: {}
 hooks_auto_accept: false

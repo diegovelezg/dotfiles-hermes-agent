@@ -19,7 +19,7 @@ Navegar a una URL, extraer su contenido, generar un reporte estructurado en cast
 Este skill usa **dos modelos**:
 
 - **MiniMax** (agente principal): orquesta el flujo y guarda en el ledger
-- **DeepSeek V3.2** (delegado): extrae contenido y sintetiza el reporte en castellano
+- **DeepSeek V4 Flash** (delegado): extrae contenido y sintetiza el reporte en castellano
 
 ```
 MiniMax → delegate_task → extraer URL + sintetizar reporte
@@ -27,7 +27,7 @@ MiniMax → delegate_task → extraer URL + sintetizar reporte
 MiniMax → ledger_item_create
 ```
 
-El modelo para delegate_task se toma del default en config.yaml (deepseek/deepseek-v3.2).
+El modelo para delegate_task se toma del default en config.yaml (deepseek/deepseek-v4-flash).
 
 ## Paso 1: Extraer y sintetizar con DeepSeek (delegar)
 

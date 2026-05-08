@@ -1,0 +1,33 @@
+{
+  "date": "2026-04-25",
+  "sources": {
+    "twitter_ai_trends": null,
+    "historical_event": {
+      "name": "ANZAC landings at Gallipoli",
+      "year": "1915",
+      "description": "Allied forces from Australia and New Zealand land at Gallipoli Peninsula during World War I, beginning the Gallipoli Campaign."
+    },
+    "techmeme": [
+      {
+        "headline": "Google Commits Up to $40 Billion in Anthropic",
+        "context": "Google invests $10B now in cash at $350B valuation, with another $30B potentially if Anthropic hits performance targets."
+      },
+      {
+        "headline": "Meta Signs Multibillion-Dollar AWS Graviton Deal",
+        "context": "Meta and Amazon reach multibillion-dollar deal for Meta to rent hundreds of thousands of AWS Graviton chips for AI inference."
+      },
+      {
+        "headline": "Cohere Merges with Aleph Alpha at ~$20B Valuation",
+        "context": "Cohere and Aleph Alpha merge with $600M Schwarz Group investment, supported by both governments as a sovereign AI play."
+      }
+    ],
+    "sciencedaily": {
+      "headline": "Scientists discover reversible male birth control that stops sperm production",
+      "summary": "Cornell University scientists have developed a reversible, nonhormonal male contraceptive that temporarily halts sperm production by disrupting meiosis. In a mouse study, treatment with compound JQ1 completely stopped sperm production for three weeks, with fertility returning within six weeks after treatment ended and producing healthy offspring."
+    },
+    "bigthink": {
+      "headline": "The first homes on Mars may be alive",
+      "why_relevant": "Aborda la innovación en hábitats espaciales mediante biología sintética, uniendo exploración interplanetaria con biotecnología avanzada."
+    }
+  }
+}

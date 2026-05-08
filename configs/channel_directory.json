@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-03T02:17:23.378431",
+  "updated_at": "2026-05-08T03:36:23.397292",
   "platforms": {
     "discord": [
       {
@@ -205,6 +205,36 @@
         "name": "Servidor de Diego / #agente / Estás ahí? / topic 1499851137422196796",
         "type": "thread",
         "thread_id": "1499851137422196796"
+      },
+      {
+        "id": "1500330643622727730:1500330643622727730",
+        "name": "Servidor de Diego / #agente / Considerando que queremos un backup de nuestras condiciones, skills, y plugin... / topic 1500330643622727730",
+        "type": "thread",
+        "thread_id": "1500330643622727730"
+      },
+      {
+        "id": "1500669032783679579:1500669032783679579",
+        "name": "Servidor de Diego / #agente / Quién es Lena? / topic 1500669032783679579",
+        "type": "thread",
+        "thread_id": "1500669032783679579"
+      },
+      {
+        "id": "1500675479148167218:1500675479148167218",
+        "name": "Servidor de Diego / #agente / Haz un test deñ skill de investigación en modo fast o quick ,no recuerdo el n... / topic 1500675479148167218",
+        "type": "thread",
+        "thread_id": "1500675479148167218"
+      },
+      {
+        "id": "1502115193335840991:1502115193335840991",
+        "name": "Servidor de Diego / #notas / https://www.sciencealert.com/scientists-have-created-the-first-ever-smell-map... / topic 1502115193335840991",
+        "type": "thread",
+        "thread_id": "1502115193335840991"
+      },
+      {
+        "id": "1502151358784999424:1502151358784999424",
+        "name": "Servidor de Diego / #agente / Creo que hay una nueva versyde Hermes. Revisa. Si es así, revisa el readme y ... / topic 1502151358784999424",
+        "type": "thread",
+        "thread_id": "1502151358784999424"
       }
     ],
     "telegram": [

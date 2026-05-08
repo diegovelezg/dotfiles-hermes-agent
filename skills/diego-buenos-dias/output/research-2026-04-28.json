@@ -1,0 +1,36 @@
+{
+  "hacker_news": [
+    "Talkie: un modelo de lenguaje vintage de 13B parámetros de 1930",
+    "¿Quién es dueño del código que escribió Claude Code?",
+    "Microsoft y OpenAI terminan su acuerdo exclusivo de reparto de ingresos",
+    "4 TB de muestras de voz robadas a 40 mil contratistas de IA en Mercor",
+    "Pgrx: construye extensiones de Postgres con Rust"
+  ],
+  "on_this_day": {
+    "event": "Kon-Tiki expedition sets sail",
+    "year": "1947",
+    "description": "Thor Heyerdahl y su tripulación de cinco personas partieron de Callao, Perú, en la balsa de madera de balsa Kon-Tiki para demostrar que los sudamericanos precolombinos podrían haber colonizado Polinesia. Derrocharon 8.000 km a través del Pacífico y llegaron a las islas Tuamotu después de 101 días."
+  },
+  "techmeme": [
+    {
+      "title": "A US judge seated a nine-person jury in the Musk v. Altman trial at a federal courthouse in California; Sam Altman and Greg Brockman were in attendance",
+      "context": "The nine-person jury was seated on Monday in the high-stakes legal battle between longtime friends turned rivals Elon Musk and Sam Altman."
+    },
+    {
+      "title": "Some jurors selected in the Musk v. Altman trial expressed negative feelings about Elon Musk and AI, but assured the court they would put these concerns aside",
+      "context": "OpenAI CEO Sam Altman and president Greg Brockman were spotted in the security line inside the courthouse this morning."
+    },
+    {
+      "title": "Elon Musk boosts an X post by Ronan Farrow promoting his New Yorker article on Sam Altman's alleged deceptions, as Musk's lawsuit against OpenAI heads to trial",
+      "context": ""
+    }
+  ],
+  "science_daily": {
+    "title": "Scientists think they finally know why Neanderthals vanished",
+    "summary": "Un nuevo estudio de la Université de Montréal sugiere que los neandertales no se extinguieron simplemente por el cambio climático o la competencia con el Homo sapiens. En cambio, la diferencia clave pudo haber sido la conectividad social: los Homo sapiens formaron redes más fuertes y flexibles que les ayudaron a sobrevivir shocks ambientales, mientras que las conexiones de los neandertales eran más frágiles y limitadas regionalmente. Esto los hizo menos resilientes a medida que las condiciones se volvían cada vez más impredecibles durante el último ciclo glacial, hace entre 60.000 y 35.000 años."
+  },
+  "bigthink": {
+    "title": "A physicist explains what the Kardashev scale gets wrong",
+    "why": "Cuestiona un modelo clásico de medición del avance civilizatorio (basado puramente en el consumo energético) y señala qué factor crítico se pasa por alto, lo que conecta directamente con debates actuales sobre sostenibilidad, energía y el futuro de la humanidad."
+  }
+}

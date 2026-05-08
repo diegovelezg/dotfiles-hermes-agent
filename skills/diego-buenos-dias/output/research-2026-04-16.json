@@ -1,0 +1,28 @@
+{
+  "fecha": "2026-04-16",
+  "twitter_ai_trends": [
+    "Allbirds → NewBird AI rebrand – La empresa de calzado Allbirds se renombra como 'NewBird AI' y su acción sube +835%",
+    "NVIDIA Lyra 2.0 – Generación de mundos 3D persistentes a partir de una sola fotografía",
+    "Jensen Huang: AI ≠ Nuclear Weapons – El CEO de NVIDIA rechaza la comparación de la IA con armas nucleares",
+    "AI Job Creation – La IA crea más empleos al automatizar y revelar nuevos cuellos de botella",
+    "Claude Code Observations – Claude Code puede clonar repositorios y generar juegos en ~60 segundos"
+  ],
+  "evento_historico": {
+    "nombre": "Descubrimiento de los efectos psicodélicos del LSD",
+    "anio": 1943,
+    "descripcion": "El químico suizo Albert Hofmann descubre accidentalmente las propiedades alucinógenas del LSD en el laboratorio Sandoz en Basilea, marcando el primer viaje de ácido en la historia."
+  },
+  "tecmeme": [
+    {"titular": "TSMC Posts Record Q1 Results on AI Chip Demand", "contexto": "TSMC reportó ingresos récord de $35B en Q1 2026, con crecimiento del 35% impulsado por demanda de chips AI."},
+    {"titular": "Live Nation/Ticketmaster Found Guilty of Illegal Monopoly", "contexto": "Un jurado federal declaró que Live Nation y Ticketmaster mantuvieron ilegalmente poder monopolístico en el mercado de venta de entradas."},
+    {"titular": "Apple Siri Engineers Sent to AI Coding Bootcamp", "contexto": "Apple envía a 200 ingenieros de Siri a un bootcamp de programación AI antes de una gran renovación de Siri prevista para WWDC 2026."}
+  ],
+  "ciencia": {
+    "titular": "Scientists just found a hidden 'drain' inside the human brain",
+    "resumen": "Científicos descubrieron la primera evidencia directa en humanos de un punto de control desconocido en el sistema linfático del cerebro. La arteria meníngea media desempeña un papel clave en la limpieza de fluidos y desechos cerebrales. Este hallazgo podría transformar el enfoque ante el envejecimiento cerebral y las enfermedades neurodegenerativas."
+  },
+  "bigthink": {
+    "titular": "The inner life we're trading away",
+    "relevancia": "Explora por qué la autoconciencia reflexiva nos separa de las máquinas inteligentes, esencial en el debate sobre consciencia y futuro de la IA."
+  }
+}
