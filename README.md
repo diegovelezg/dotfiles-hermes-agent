@@ -82,12 +82,12 @@ PersonalAILedgerProvider        → plugins/personal-ai-ledger/
 
 Los 4 skills de Diego se cargan via `external_dirs` en `config.yaml`. **Sobreviven a `hermes update`** — no necesitan restore.
 
-| Skill | Descripción |
+|| Skill | Descripción |
 |-------|-------------|
 | `diego-buenos-dias` | Informe matutino con TTS para Telegram |
 | `diego-read-it-later` | Extraer y guardar contenido de URLs |
 | `diego-research` | Investigación estructurada con hechos atómicos |
-| `diego-intel` | Briefing personalizado + workflow de investigación |
+| `diego-shopping-scout` | Monitoreo y comparación de precios de productos |
 
 ---
 
@@ -95,7 +95,8 @@ Los 4 skills de Diego se cargan via `external_dirs` en `config.yaml`. **Sobreviv
 
 | Job | Schedule | Delivery | Descripción |
 |-----|----------|----------|-------------|
-| Buenos Días (`a5976debdb34`) | Daily 7:00 AM Lima | Telegram | Informe con histórico, Techmeme, AI Twitter, ScienceDaily, BigThink |
+| Buenos Días (`a5976debdb34`) | Daily 7:00 AM Lima (`0 12 * * *`) | Telegram | Informe con histórico, Techmeme, AI Twitter, ScienceDaily, BigThink |
+| Shopping Scout (`0cd58cf53397`) | Daily 22:00 Lima (`0 22 * * *`) | Origin | Revisa precios configurados en `output/config.json` y reporta cambios |
 
 ---
 
@@ -178,9 +179,19 @@ Skills via `external_dirs` no necesitan acción — se recargan automáticamente
 
 ## Backup
 
+> ⚠️ `backup.sh` está roto — no copia archivos reales, solo symlinks. Hacer backup manualmente:
+
 ```bash
-# Backup de configs, plugins y skills al repo
-bash ~/dotfiles-hermes-agent/scripts/backup.sh
+# Skills (con archivos reales, no symlinks)
+cp -rL ~/.hermes/custom-skills/diego-shopping-scout/ ~/dotfiles-hermes-agent/skills/
+for skill in diego-buenos-dias diego-read-it-later diego-research; do
+  cp -rL ~/.hermes/skills/.archive/$skill/ ~/dotfiles-hermes-agent/skills/
+done
+
+# Plugins
+bash ~/dotfiles-hermes-agent/scripts/restore.sh
+
+# Push
 cd ~/dotfiles-hermes-agent && git push
 ```
 
@@ -200,7 +211,7 @@ dotfiles-hermes-agent/
 │   └── gateway_state.json
 ├── skills/
 │   ├── diego-buenos-dias/       # Skill custom — survives via external_dirs
-│   ├── diego-intel/
+│   ├── diego-shopping-scout/    # Skill custom — survives via external_dirs
 │   ├── diego-read-it-later/
 │   └── diego-research/
 ├── plugins/
