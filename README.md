@@ -17,69 +17,43 @@ Este repo es el backup canónico. Se commitea desde el estado real de `~/.hermes
 **Lo que está en el repo:**
 - `configs/MEMORY.md`, `configs/USER.md` — contexto de Diego (personal, no secretos)
 - `configs/config.yaml.example` — template de config con URLs/secrets redactados
-- `configs/.env.example` — nombres de variables de entorno
+- `configs/.env.example` — template de env vars con solo los nombres, valores vacíos
 - `configs/channel_directory.json` — canales registrados (Telegram/Discord)
 - `configs/discord_threads.json` — threads tracked
 - `skills/diego-*/` — 5 skills custom (buenos-dias, read-it-later, research, shopping-scout, chrome-remote-control)
 - `plugins/personal-ai-*/` — 2 plugins (memory + ledger) para Mem0/papelitosdecolor
-- `scripts/upload-secrets-to-bws.sh` — sube el `.env` actual a Bitwarden Secrets Manager (one-time)
-- `scripts/restore-secrets-from-bws.sh` — descarga el `.env` desde Bitwarden a una máquina nueva
 - `scripts/backup.sh`, `scripts/restore.sh` — backup/restore local de archivos
 - `hooks/`, `cron/`, `gateway/` — infra y automatizaciones
 - `README.md` — este archivo
 
 **Lo que NO está en el repo (secrets):**
-- `configs/config.yaml` — config real con URLs internas → en Bitwarden Secrets Manager
-- `~/.hermes/.env` — API keys, tokens, home channels → en Bitwarden Secrets Manager
+- `configs/config.yaml` — config real con URLs internas
+- `~/.hermes/.env` — API keys, tokens, home channels
 
-### Bitwarden Secrets Manager — primer setup
-
-1. **Crear cuenta y proyecto en Bitwarden:**
-   - Web: https://vault.bitwarden.com → Secrets Manager (plan pago)
-   - Crear un proyecto (ej: `hermes-agent`)
-   - Crear un Machine Account con acceso a ese proyecto
-   - Copiar el `access token` (formato `0.xxxx`) y el `project ID` (UUID)
-
-2. **Instalar `bws`:**
-   ```bash
-   curl -sSL https://bws.bitwarden.com/install | sh
-   ```
-
-3. **Subir el `.env` actual (one-time):**
-   ```bash
-   export BWS_ACCESS_TOKEN="0.your-token-here"
-   export BWS_PROJECT_ID="00000000-0000-0000-0000-000000000000"
-   ./scripts/upload-secrets-to-bws.sh --apply
-   ```
-   Esto crea/actualiza un secret llamado `hermes-dotfiles-env` con todas las variables del `.env` actual.
-
-4. **Configurar Hermes para usar BWS:**
-   Agregar a `~/.hermes/.env` (o export en el shell):
-   ```bash
-   export BWS_ACCESS_TOKEN="0.your-token-here"
-   ```
-   Hermes carga automáticamente todos los secrets del proyecto accesible al boot.
+**Gestión de secrets:** Diego no tiene Bitwarden Secrets Manager ni otro SaaS de pago. La estrategia actual es:
+- El repo `dotfiles-hermes-agent` es **privado** en GitHub
+- `configs/.env.example` documenta los nombres de variables, valores vacíos
+- `~/.hermes/.env` (con los valores reales) queda **solo en disco**, nunca en el repo
+- `configs/config.yaml` (con URLs internas) queda **solo en disco**, nunca en el repo
+- En una máquina nueva: `cp configs/.env.example ~/.hermes/.env` y completar valores manualmente
 
 ### Restore en máquina nueva
 
 ```bash
-# 1. Clonar este repo
+# 1. Clonar este repo (es privado, requiere auth)
 git clone https://github.com/diegovelezg/dotfiles-hermes-agent.git ~/dotfiles-hermes-agent
 cd ~/dotfiles-hermes-agent
 
-# 2. Instalar bws
-curl -sSL https://bws.bitwarden.com/install | sh
+# 2. Crear el .env con los valores reales
+cp configs/.env.example ~/.hermes/.env
+chmod 600 ~/.hermes/.env
+# Editar ~/.hermes/.env y completar las 25 variables (API keys, tokens, etc)
 
-# 3. Descargar el .env desde Bitwarden
-export BWS_ACCESS_TOKEN="0.your-token-here"
-./scripts/restore-secrets-from-bws.sh
-
-# 4. Sincronizar el config real (el .example está en el repo)
+# 3. Crear el config.yaml con los valores reales
 cp configs/config.yaml.example ~/.hermes/config.yaml
-# Editar ~/.hermes/config.yaml con los valores reales (o usar Bitwarden)
-# O alternativamente, hacer backup del config real desde una máquina que ya lo tiene
+# Editar ~/.hermes/config.yaml y completar URLs, providers, etc
 
-# 5. Verificar
+# 4. Verificar
 hermes skills list | grep diego-
 hermes plugins list
 ```
