@@ -279,11 +279,16 @@ class PersonalAIClient:
                 "limit": str(min(limit, 50)),
             }
             try:
+                # Try the correct tool name first, fall back to legacy name
                 result = self._call_tool_sync("memories_search", params)
-                if result:
+                if not result or result.get("status") == "error":
+                    result = self._call_tool_sync("personal_ai_memories_search", params)
+                if result and result.get("status") != "error":
                     data = result.get("data", {})
                     items = data.get("memories", []) if isinstance(data, dict) else []
+                    policies = data.get("policies", []) if isinstance(data, dict) else []
                     all_results.extend(items)
+                    all_results.extend(policies)
             except Exception as e:
                 logger.warning("[personal-ai] search_memories(%s) error: %s", mtype, e)
         return all_results
