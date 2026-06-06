@@ -1,33 +1,42 @@
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.eggs/
 
-# Secrets (NEVER commit)
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor
+.vscode/
+.idea/
+
+# Hermes runtime — never back up
 .env
+.env.local
 auth.json
-
-# Runtime state (Hermes-managed, regenerated on restart)
-gateway.lock
+auth.lock
 gateway.pid
+gateway_state.json
+channel_directory.json
+hermes_state.db
 state.db
 state.db-shm
 state.db-wal
-hermes_state.db
+cron/
+gateway/
+hooks/
+scripts/
+configs/
+SOUL.md
 
-# Large runtime data (generated, not config)
-audio_cache/
-image_cache/
-cache/
-logs/
-sessions/
-
-# Platform-specific state
-whatsapp/session/
-sandboxes/
-feishu_seen_message_ids.json
-
-# Local dev/build artifacts
-node_modules/
-.pytest_cache/
-configs/config.yaml
-
-# Whitelist the example template
-!configs/config.yaml.example
+# Skill output folders (regenerated each run)
+skills/*/output/
+skills/*/facts/

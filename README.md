@@ -1,307 +1,57 @@
-# Hermes Agent — Dotfiles de Diego
+# Diego's Hermes Custom Stuff
 
-Configuración personalizada de Hermes Agent. Stack: MiniMax-M2 como agente principal + DeepSeek (OpenRouter) para investigación + personal-ai (Mem0) como memoria persistente.
+Backup of Diego's custom skills and plugins for Hermes Agent.
 
----
+Following the official Hermes docs:
+- [Creating Skills](https://hermes-agent.nousresearch.com/docs/developer-guide/creating-skills)
+- [Build a Plugin](https://hermes-agent.nousresearch.com/docs/guides/build-a-hermes-plugin)
+- [Working with Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)
+- [Plugins](https://hermes-agent.nousresearch.com/docs/user-guide/features/plugins)
 
-## Backup
+## Layout
 
-Este repo es el backup canónico. Se commitea desde el estado real de `~/.hermes/`.
+```
+.
+├── skills/                          # 5 custom skills (by the book: SKILL.md per skill)
+│   ├── diego-buenos-dias/SKILL.md
+│   ├── diego-read-it-later/SKILL.md
+│   ├── diego-research/SKILL.md
+│   ├── diego-research/references/   # additional docs loaded on demand
+│   ├── diego-shopping-scout/SKILL.md
+│   ├── diego-shopping-scout/scripts/  # helper scripts called from the skill
+│   └── diego-chrome-remote-control/SKILL.md
+│
+└── plugins/                         # 2 custom plugins (by the book: plugin.yaml + Python)
+    ├── personal-ai-memory/
+    │   ├── plugin.yaml
+    │   └── __init__.py
+    └── personal-ai-ledger/
+        ├── plugin.yaml
+        ├── __init__.py
+        ├── tools.py
+        └── schemas.py
+```
 
-**Workflow:**
-- **Rama `main`** = estado actual del runtime, sincronizada con `~/.hermes/`
-- **Rama `master`** = estado legacy (no se usa activamente)
-- **Rama `con-memoria`** = variante experimental (no usar en producción)
-- **Rama `backup`** = snapshot pre-arquitectura v0.7
+## Install on a new machine
 
-**Lo que está en el repo:**
-- `configs/MEMORY.md`, `configs/USER.md` — contexto de Diego (personal, no secretos)
-- `configs/config.yaml.example` — template de config con URLs/secrets redactados
-- `configs/.env.example` — template de env vars con solo los nombres, valores vacíos
-- `configs/channel_directory.json` — canales registrados (Telegram/Discord)
-- `configs/discord_threads.json` — threads tracked
-- `skills/diego-*/` — 5 skills custom (buenos-dias, read-it-later, research, shopping-scout, chrome-remote-control)
-- `plugins/personal-ai-*/` — 2 plugins (memory + ledger) para Mem0/papelitosdecolor
-- `scripts/backup.sh`, `scripts/restore.sh` — backup/restore local de archivos
-- `hooks/`, `cron/`, `gateway/` — infra y automatizaciones
-- `README.md` — este archivo
-
-**Lo que NO está en el repo (secrets):**
-- `configs/config.yaml` — config real con URLs internas
-- `~/.hermes/.env` — API keys, tokens, home channels
-
-**Gestión de secrets:** Diego no tiene Bitwarden Secrets Manager ni otro SaaS de pago. La estrategia actual es:
-- El repo `dotfiles-hermes-agent` es **privado** en GitHub
-- `configs/.env.example` documenta los nombres de variables, valores vacíos
-- `~/.hermes/.env` (con los valores reales) queda **solo en disco**, nunca en el repo
-- `configs/config.yaml` (con URLs internas) queda **solo en disco**, nunca en el repo
-- En una máquina nueva: `cp configs/.env.example ~/.hermes/.env` y completar valores manualmente
-
-### Restore en máquina nueva
+Per the official docs:
 
 ```bash
-# 1. Clonar este repo (es privado, requiere auth)
-git clone https://github.com/diegovelezg/dotfiles-hermes-agent.git ~/dotfiles-hermes-agent
-cd ~/dotfiles-hermes-agent
+# Skills — drop into ~/.hermes/skills/ (or use a tap)
+mkdir -p ~/.hermes/skills
+cp -r skills/* ~/.hermes/skills/
 
-# 2. Crear el .env con los valores reales
-cp configs/.env.example ~/.hermes/.env
-chmod 600 ~/.hermes/.env
-# Editar ~/.hermes/.env y completar las 25 variables (API keys, tokens, etc)
+# Plugins — drop into ~/.hermes/plugins/ and enable in config.yaml
+mkdir -p ~/.hermes/plugins
+cp -r plugins/* ~/.hermes/plugins/
 
-# 3. Crear el config.yaml con los valores reales
-cp configs/config.yaml.example ~/.hermes/config.yaml
-# Editar ~/.hermes/config.yaml y completar URLs, providers, etc
-
-# 4. Verificar
-hermes skills list | grep diego-
+# Verify
+hermes skills list
 hermes plugins list
 ```
 
----
+## Restore
 
-## Plataformas Conectadas
+The runtime data, configs, secrets, and skill outputs are intentionally **not** in this repo — they live in `~/.hermes/` and are regenerated from the sources here on a fresh install.
 
-| Plataforma | Status | Destino |
-|-----------|--------|---------|
-| Telegram | ✓ | DM y Home: 1093162286 |
-| Discord | ✓ | Home: 1474242034356326442 |
-
----
-
-## Arquitectura
-
-```
-Usuario (Telegram / Discord)
-         ↓
-  Hermes Gateway  (Telegram bot + Discord bot)
-         ↓
-  AIAgent  (MiniMax-M2 — agente principal)
-         ↓
-  ┌─────────────────────────────────────┐
-  │  Tools nativas                      │
-  │  web_search / web_extract          │
-  │  terminal / execute_code            │
-  │  delegate_task                     │
-  │  memory (builtin + personal-ai)    │
-  └─────────────────────────────────────┘
-         ↓
-  OpenRouter  (DeepSeek-V3 / R1 — investigación)
-```
-
----
-
-## Modelos LLM
-
-| Rol | Modelo | Provider | Uso |
-|-----|--------|----------|-----|
-| Agente principal | MiniMax-M2 | minimax | Conversación, coordinación, todas las tools |
-| Investigación pesada | DeepSeek-V3 | OpenRouter | Síntesis de temas complejos |
-| Razonamiento profundo | DeepSeek-R1 | OpenRouter | Análisis lógico, debugging |
-| Visión | MiniMax-V06 | minimax | Análisis de imágenes |
-
----
-
-## Sistema de Memoria
-
-**SSOT: personal-ai MCP (Mem0)**
-
-Todos los hechos sobre Diego, sus relaciones, preferencias y contexto personal viven en Mem0 (servidor `uaimcp.papelitosdecolor.com`). La tool `memory` escribe a archivos locales (`~/.hermes/memories/MEMORY.md`, `USER.md`) que sincronizan con Mem0.
-
-```
-MemoryManager
-    ├── BuiltinMemoryProvider   → MEMORY.md / USER.md (archivos planos)
-    └── PersonalAIMemoryProvider → plugins/personal-ai-memory/
-                                  SSE → personal-ai MCP → Mem0
-
-PersonalAILedgerProvider        → plugins/personal-ai-ledger/
-```
-
-### Plugins
-
-| Plugin | Tools | Descripción |
-|--------|-------|-------------|
-| `personal-ai-memory` | `personal_ai_memories_search`, `personal_ai_memories_manage` | Búsqueda y gestión de memorias |
-| `personal-ai-ledger` | `ledger_query`, `ledger_item_create`, `ledger_bulk_action`, `briefing_generate`, `browser_activity_*` | Items action/intel + briefings |
-
-### Tipos de memoria en Mem0
-
-| Tipo | Descripción |
-|------|-------------|
-| `know` | Hechos persistentes — proyectos, personas, preferencias |
-| `policy` | Reglas operativas — "Diego prefiere español informal" |
-| `episodic` | Eventos pasados — "Grupos focales completados 2-3 abr 2026" |
-
----
-
-## Skills Custom
-
-Los 4 skills de Diego se cargan via `external_dirs` en `config.yaml`. **Sobreviven a `hermes update`** — no necesitan restore.
-
-|| Skill | Descripción |
-|-------|-------------|
-| `diego-buenos-dias` | Informe matutino con TTS para Telegram |
-| `diego-read-it-later` | Extraer y guardar contenido de URLs |
-| `diego-research` | Investigación estructurada con hechos atómicos |
-| `diego-shopping-scout` | Monitoreo y comparación de precios de productos |
-
----
-
-## Cron Jobs
-
-| Job | Schedule | Delivery | Descripción |
-|-----|----------|----------|-------------|
-| Buenos Días (`a5976debdb34`) | Daily 7:00 AM Lima (`0 12 * * *`) | Telegram | Informe con histórico, Techmeme, AI Twitter, ScienceDaily, BigThink |
-| Shopping Scout (`0cd58cf53397`) | Daily 22:00 Lima (`0 22 * * *`) | Origin | Revisa precios configurados en `output/config.json` y reporta cambios |
-
----
-
-## Flujo de Investigación
-
-```
-1. web_search (Exa, limit=5)
-   ↓
-2. web_extract (las 3-5 URLs más relevantes)
-   ↓
-3. Síntesis con DeepSeek-V3 via OpenRouter
-```
-
-> **Nota Brave (fallback):** Necesita plan "Data for Search" — keys `BSA*` del plan AI no funcionan.
-
----
-
-## Configuración
-
-### Setup inicial en máquina nueva
-
-```bash
-# 1. Clonar repo
-git clone https://github.com/diegovelezg/dotfiles-hermes-agent.git ~/dotfiles-hermes-agent
-
-# 2. Copiar .env y completar API keys
-cp dotfiles-hermes-agent/.env.example ~/.hermes/.env
-# Editar ~/.hermes/.env con las API keys reales
-
-# 3. Restaurar plugins personal-ai (no survive updates)
-bash ~/dotfiles-hermes-agent/scripts/restore.sh
-
-# 4. Verificar
-hermes plugins list | grep personal-ai
-hermes skills list  | grep diego
-hermes doctor
-```
-
-### `~/.hermes/.env` (nunca commitear)
-
-```bash
-MINIMAX_API_KEY=
-OPENROUTER_API_KEY=
-EXA_API_KEY=
-PERSONAL_AI_API_KEY=
-PERSONAL_AI_BASE_URL=https://uaimcp.papelitosdecolor.com
-PERSONAL_AI_REMOTE_URL=https://uaimcp.papelitosdecolor.com/sse
-PERSONAL_AI_USER_ID=1093162286
-TELEGRAM_BOT_TOKEN=
-DISCORD_BOT_TOKEN=
-```
-
-Template público: `configs/.env.example`
-
-### `~/.hermes/config.yaml`
-
-Modelos, providers, skills `external_dirs`, y plugins activos. **Este repo versiona `configs/config.yaml`** — copiar a `~/.hermes/config.yaml` para mantener la config sincronizada.
-
-### SOUL.md
-
-Define la personalidad del agente. Actualmente: **kawaii**. Editar en `SOUL.md` y references en `configs/` via symlink.
-
----
-
-## Post-Update de Hermes
-
-`hermes update` reinstala hermes-agent y **wipea** `~/.hermes/plugins/`. Los plugins personal-ai se pierden.
-
-```bash
-# Restaurar plugins
-bash ~/dotfiles-hermes-agent/scripts/restore.sh
-
-# Verificar
-hermes plugins list | grep personal-ai
-```
-
-Skills via `external_dirs` no necesitan acción — se recargan automáticamente.
-
----
-
-## Backup
-
-> ⚠️ `backup.sh` está roto — no copia archivos reales, solo symlinks. Hacer backup manualmente:
-
-```bash
-# Skills (con archivos reales, no symlinks)
-cp -rL ~/.hermes/custom-skills/diego-shopping-scout/ ~/dotfiles-hermes-agent/skills/
-for skill in diego-buenos-dias diego-read-it-later diego-research; do
-  cp -rL ~/.hermes/skills/.archive/$skill/ ~/dotfiles-hermes-agent/skills/
-done
-
-# Plugins
-bash ~/dotfiles-hermes-agent/scripts/restore.sh
-
-# Push
-cd ~/dotfiles-hermes-agent && git push
-```
-
----
-
-## Estructura del Repo
-
-```
-dotfiles-hermes-agent/
-├── configs/
-│   ├── config.yaml              # Config principal de Hermes
-│   ├── .env.example             # Template de variables (sin secrets)
-│   ├── MEMORY.md                # Memorias del agente (symlinked desde ~/.hermes/memories/)
-│   ├── USER.md                  # Perfil del usuario (symlinked)
-│   ├── channel_directory.json
-│   ├── discord_threads.json
-│   └── gateway_state.json
-├── skills/
-│   ├── diego-buenos-dias/       # Skill custom — survives via external_dirs
-│   ├── diego-shopping-scout/    # Skill custom — survives via external_dirs
-│   ├── diego-read-it-later/
-│   └── diego-research/
-├── plugins/
-│   ├── personal-ai-memory/      # Plugin memory provider (post-update: restore.sh)
-│   └── personal-ai-ledger/      # Plugin ledger/briefing
-├── cron/
-│   └── jobs.json                # Buenos Días job
-├── gateway/builtin_hooks/
-│   ├── personal_ai_client.py
-│   └── personal_ai_memory_provider.py
-├── scripts/
-│   ├── backup.sh
-│   └── restore.sh
-├── SOUL.md                      # Personalidad del agente
-└── README.md
-```
-
----
-
-## Comandos Útiles
-
-```bash
-# Backup
-./scripts/backup.sh
-
-# Restaurar plugins post-update
-bash ~/dotfiles-hermes-agent/scripts/restore.sh
-
-# Gateway
-systemctl --user restart hermes-gateway
-journalctl --user -u hermes-gateway -f
-
-# Diagnóstico
-hermes plugins list | grep personal-ai
-hermes skills list  | grep diego
-hermes doctor
-```
+Last sync with `~/.hermes/`: 2026-06-06.
