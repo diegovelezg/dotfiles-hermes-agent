@@ -27,3 +27,7 @@ feishu_seen_message_ids.json
 # Local dev/build artifacts
 node_modules/
 .pytest_cache/
+configs/config.yaml
+
+# Whitelist the example template
+!configs/config.yaml.example

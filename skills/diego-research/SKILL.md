@@ -343,6 +343,7 @@ Cada línea: JSON con {fact_id, claim, source_url, query_type, analysis, vertica
 
 - NO usa Ledger salvo que el usuario lo pida explícitamente
 - Notas de implementación, constraints descubiertos y patrones derivados de tests: ver `references/implementation-notes.md`
+- SSH tunnel + Chrome CDP: ver `references/ssh-tunnel-chrome-cdp.md` — lecciones aprendidas de session de tunnel SSH (no resuelto, alternativas documentadas)
 - Delegate usa DeepSeek V4 Flash (modelo dialectico)
 - Agente principal usa MiniMax (síntesis y reporte)
 - Si una búsqueda no devuelve resultados, continuar con las demás

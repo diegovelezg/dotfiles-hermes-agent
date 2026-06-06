@@ -4,6 +4,40 @@ Configuración personalizada de Hermes Agent. Stack: MiniMax-M2 como agente prin
 
 ---
 
+## Backup
+
+Este repo es el backup canónico. Se commitea desde el estado real de `~/.hermes/`.
+
+**Workflow:**
+- **Rama `main`** = estado actual del runtime, sincronizada con `~/.hermes/`
+- **Rama `master`** = estado legacy (no se usa activamente)
+- **Rama `con-memoria`** = variante experimental (no usar en producción)
+- **Rama `backup`** = snapshot pre-arquitectura v0.7
+
+**Lo que está en el repo:**
+- `configs/MEMORY.md`, `configs/USER.md` — contexto de Diego (personal, no secretos)
+- `configs/config.yaml.example` — template de config con URLs/secrets redactados
+- `configs/.env.example` — nombres de variables de entorno
+- `configs/channel_directory.json` — canales registrados (Telegram/Discord)
+- `configs/discord_threads.json` — threads tracked
+- `skills/diego-*/` — 5 skills custom (buenos-dias, read-it-later, research, shopping-scout, chrome-remote-control)
+- `plugins/personal-ai-*/` — 2 plugins (memory + ledger) para Mem0/papelitosdecolor
+- `scripts/`, `hooks/`, `cron/`, `gateway/` — infra y automatizaciones
+- `README.md` — este archivo
+
+**Lo que NO está en el repo (secrets):**
+- `configs/config.yaml` — config real con URLs internas → en Bitwarden Secrets Manager
+- `~/.hermes/.env` — API keys, tokens, home channels → en Bitwarden Secrets Manager
+
+**Restore en máquina nueva:**
+1. Clonar este repo
+2. Instalar `bws` (Bitwarden CLI) y autenticar con el `BWS_ACCESS_TOKEN`
+3. `bws run -- hermes init` — Hermes carga los secrets desde Bitwarden
+4. Los plugins y skills se descubren automáticamente desde `~/.hermes/plugins/` y `~/.hermes/skills/`
+5. Verificar con `hermes skills list | grep diego-` y `hermes plugins list`
+
+---
+
 ## Plataformas Conectadas
 
 | Plataforma | Status | Destino |

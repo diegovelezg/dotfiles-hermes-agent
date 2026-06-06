@@ -1,7 +1,10 @@
+# Hermes config snapshot — secrets redacted.
+# Real values come from Bitwarden Secrets Manager or ~/.hermes/config.yaml on each machine.
+
 model:
   default: MiniMax-M2.7
   provider: minimax
-  base_url: https://api.minimax.io/anthropic
+  base_url: "<REDACTED>"
 providers: {}
 fallback_providers: []
 credential_pool_strategies:
@@ -136,7 +139,7 @@ auxiliary:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
     download_timeout: 30
@@ -144,21 +147,21 @@ auxiliary:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 360
     extra_body: {}
   compression:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 120
     extra_body: {}
   session_search:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
     max_concurrency: 3
@@ -166,42 +169,42 @@ auxiliary:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
   approval:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
   mcp:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
   title_generation:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
   curator:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 600
     extra_body: {}
   flush_memories:
     provider: auto
     model: ''
     base_url: ''
-    api_key: ''
+    api_key: "<REDACTED>"
     timeout: 30
     extra_body: {}
 display:
@@ -275,7 +278,7 @@ stt:
     model: voxtral-mini-latest
   model: whisper-1
 voice:
-  record_key: ctrl+b
+  record_key: "<REDACTED>"
   max_recording_seconds: 120
   auto_tts: false
   beep_enabled: true
@@ -299,7 +302,7 @@ delegation:
   model: deepseek/deepseek-v4-flash
   provider: openrouter
   base_url: ''
-  api_key: ''
+  api_key: "<REDACTED>"
   inherit_mcp_toolsets: true
   max_iterations: 50
   child_timeout_seconds: 600
@@ -364,7 +367,7 @@ hooks_auto_accept: false
 personalities: {}
 security:
   allow_private_urls: false
-  redact_secrets: true
+  redact_secrets: "<REDACTED>"
   tirith_enabled: true
   tirith_path: tirith
   tirith_timeout: 5
@@ -389,7 +392,7 @@ logging:
   backup_count: 3
 model_catalog:
   enabled: true
-  url: https://hermes-agent.nousresearch.com/docs/api/model-catalog.json
+  url: "<REDACTED>"
   ttl_hours: 24
   providers: {}
 network:
