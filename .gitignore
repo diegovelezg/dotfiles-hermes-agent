@@ -21,6 +21,9 @@ Thumbs.db
 # Hermes runtime — never back up
 .env
 .env.local
+.env.*.local
+# Whitelist the example template
+!.env.example
 auth.json
 auth.lock
 gateway.pid
