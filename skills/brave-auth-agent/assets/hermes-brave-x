@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# hermes-brave-x: lanza Brave con perfil persistente para sesiones autenticadas
+# Uso:
+#   hermes-brave-x login              # abre con UI para login manual (headed)
+#   hermes-brave-x start URL          # arranca headless + debug port + abre URL
+#   hermes-brave-x cdp                # imprime CDP endpoint URL (espera si no listo)
+#   hermes-brave-x stop               # mata la instancia headless
+#   hermes-brave-x status             # chequea si hay instancia corriendo
+#
+# Variables de entorno:
+#   HERMES_BRAVE_PROFILE  user-data-dir (default: ~/.hermes/browser-data/x)
+#   HERMES_BRAVE_PORT     puerto CDP debug (default: 9222)
+#   HERMES_BRAVE_BIN      binario brave (default: autodetect)
+
+set -euo pipefail
+
+PROFILE="${HERMES_BRAVE_PROFILE:-$HOME/.hermes/browser-data/agent}"
+PORT="${HERMES_BRAVE_PORT:-9222}"
+PIDFILE="/tmp/hermes-brave-x.pid"
+
+# Autodetect binario
+if [[ -n "${HERMES_BRAVE_BIN:-}" ]]; then
+  BIN="$HERMES_BRAVE_BIN"
+elif command -v brave-origin >/dev/null 2>&1; then
+  BIN="brave-origin"
+elif command -v brave >/dev/null 2>&1; then
+  BIN="brave"
+elif [[ -x /usr/sbin/brave-origin ]]; then
+  BIN="/usr/sbin/brave-origin"
+elif [[ -x /usr/bin/brave-origin ]]; then
+  BIN="/usr/bin/brave-origin"
+else
+  echo "ERROR: no encuentro brave-origin en PATH ni en /usr/sbin/brave-origin" >&2
+  exit 1
+fi
+
+mkdir -p "$PROFILE" "$(dirname "$PIDFILE")"
+
+is_running() {
+  [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  login)
+    # Headed para login manual
+    exec "$BIN" --user-data-dir="$PROFILE" "$@"
+    ;;
+
+  headed)
+    # Headed con cdp habilitado (sin --headless) — sortea bloqueos tipo reddit
+    URL="${1:-https://x.com/home}"
+    if [[ -f "$PIDFILE" ]]; then
+      pid=$(cat "$PIDFILE")
+      if kill -0 "$pid" 2>/dev/null; then
+        echo "Ya hay una instancia corriendo (pid $pid)"
+        echo "Endpoint CDP: http://127.0.0.1:$PORT"
+        exit 0
+      fi
+    fi
+    rm -f "$PROFILE/SingletonLock" "$PROFILE/SingletonCookie" "$PROFILE/SingletonSocket" 2>/dev/null || true
+    nohup "$BIN" \
+      --user-data-dir="$PROFILE" \
+      --remote-debugging-port="$PORT" \
+      --remote-debugging-address=127.0.0.1 \
+      --remote-allow-origins=http://127.0.0.1:9222,http://127.0.0.1:9222 \
+      "$URL" \
+      >/tmp/hermes-brave-x.log 2>&1 &
+    echo $! > "$PIDFILE"
+    sleep 2
+    echo "Lanzado brave HEADED (pid $(cat "$PIDFILE"))"
+    echo "Endpoint CDP: http://127.0.0.1:$PORT"
+    echo "Ventana visible: deberia aparecer en tu escritorio"
+    ;;
+
+  start)
+    URL="${1:-https://x.com/home}"
+    if is_running; then
+      echo "Ya hay una instancia corriendo (pid $(cat "$PIDFILE"))"
+      echo "Endpoint CDP: http://127.0.0.1:$PORT"
+      exit 0
+    fi
+    # Limpiar singleton locks huerfanos del login manual
+    rm -f "$PROFILE/SingletonLock" "$PROFILE/SingletonCookie" "$PROFILE/SingletonSocket" 2>/dev/null || true
+
+    # Headless con remote debugging
+    nohup "$BIN" \
+      --headless=new \
+      --disable-gpu \
+      --no-sandbox \
+      --user-data-dir="$PROFILE" \
+      --remote-debugging-port="$PORT" \
+      --remote-debugging-address=127.0.0.1 \
+      --remote-allow-origins=http://127.0.0.1:9222,http://127.0.0.1:9222 \
+      --hide-scrollbars \
+      "$URL" \
+      >/tmp/hermes-brave-x.log 2>&1 &
+    echo $! > "$PIDFILE"
+    sleep 1
+    echo "Lanzado brave headless (pid $(cat "$PIDFILE"))"
+    echo "Endpoint CDP: http://127.0.0.1:$PORT"
+    ;;
+
+  cdp)
+    # Espera a que el endpoint CDP responda y lo imprime
+    for i in $(seq 1 30); do
+      if curl -sf "http://127.0.0.1:$PORT/json/version" >/dev/null 2>&1; then
+        curl -sf "http://127.0.0.1:$PORT/json/version" | grep -oE '"webSocketDebuggerUrl":\s*"[^"]+"' | cut -d'"' -f4
+        exit 0
+      fi
+      sleep 0.5
+    done
+    echo "ERROR: CDP no responde en http://127.0.0.1:$PORT tras 15s" >&2
+    echo "Revisa /tmp/hermes-brave-x.log" >&2
+    exit 1
+    ;;
+
+  stop)
+    # Matar SOLO el pid que nosotros lanzamos (registrado en PIDFILE)
+    # Nunca usar pkill con patrones para no tocar brave personal del usuario
+    if [[ -f "$PIDFILE" ]]; then
+      pid=$(cat "$PIDFILE")
+      if kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null || true
+        sleep 1
+        kill -9 "$pid" 2>/dev/null || true
+        echo "Instancia detenida (pid $pid)"
+      else
+        echo "PID $pid no estaba corriendo"
+      fi
+      rm -f "$PIDFILE"
+    else
+      echo "No hay instancia registrada (no existe $PIDFILE)"
+    fi
+    ;;
+
+  status)
+    if is_running; then
+      echo "running (pid $(cat "$PIDFILE"))"
+      curl -sf "http://127.0.0.1:$PORT/json/version" 2>/dev/null | head -1 || true
+    else
+      echo "not running"
+    fi
+    ;;
+
+  help|--help|-h|"")
+    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+
+  *)
+    echo "Comando desconocido: $cmd" >&2
+    exit 2
+    ;;
+esac

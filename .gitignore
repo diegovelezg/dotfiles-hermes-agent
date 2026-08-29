@@ -43,3 +43,6 @@ SOUL.md
 # Skill output folders (regenerated each run)
 skills/*/output/
 skills/*/facts/
+
+# Personal-ai plugin archived — superseded by Hindsight (do NOT install)
+plugins/personal-ai-memory/
