@@ -1,0 +1,11 @@
+description: notas — Consultar, crear, editar o elimnar notas de mi ledger UAI
+description_auto: false
+ui_meta:
+  hermes-bots:
+    shape: blob
+    color: '#8b5cf6'
+    imageKind: shape
+    title: notas
+    created: 1788219519783
+_ui_meta_revisions:
+  hermes-bots: 1

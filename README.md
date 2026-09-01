@@ -1,66 +1,65 @@
-# Diego's Hermes Custom Stuff
+# dotfiles-hermes-agent
 
-Backup of Diego's custom skills and plugins for Hermes Agent.
+Backup versionado de la configuración custom de Hermes Agent para el profile `notas` de Diego.
 
-Following the official Hermes docs:
-- [Creating Skills](https://hermes-agent.nousresearch.com/docs/developer-guide/creating-skills)
-- [Build a Plugin](https://hermes-agent.nousresearch.com/docs/guides/build-a-hermes-plugin)
-- [Working with Skills](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)
-- [Plugins](https://hermes-agent.nousresearch.com/docs/user-guide/features/plugins)
+Sincronizado desde `~/.hermes/profiles/notas/` → este repo.
 
 ## Layout
 
 ```
 .
-├── skills/                          # 6 custom skills (by the book: SKILL.md per skill)
-│   ├── diego-buenos-dias/SKILL.md
-│   ├── diego-read-it-later/SKILL.md
-│   ├── diego-research/SKILL.md
-│   ├── diego-research/references/   # additional docs loaded on demand
-│   ├── diego-shopping-scout/SKILL.md
-│   ├── diego-shopping-scout/scripts/  # helper scripts called from the skill
-│   ├── diego-chrome-remote-control/SKILL.md
-│   └── brave-auth-agent/            # persistent Brave profile for authenticated browsing
-│       ├── SKILL.md
-│       └── assets/
+├── config/
+│   ├── config.yaml         # Hermes gateway config (modelos, providers, tools)
+│   ├── profile.yaml        # metadata del profile "notas"
+│   ├── SOUL.md             # identidad/convenciones del agente
+│   └── .env.example        # template de secrets (sin valores reales)
 │
-└── plugins/                         # 2 custom plugins (by the book: plugin.yaml + Python)
-    ├── personal-ai-memory/          # NOT installed — superseded by Hindsight (SSOT)
-    │   ├── plugin.yaml
-    │   └── __init__.py
-    └── personal-ai-ledger/
-        ├── plugin.yaml
-        ├── __init__.py
-        ├── tools.py
-        └── schemas.py
+├── memories/
+│   ├── MEMORY.md           # reglas activas del agente
+│   └── USER.md             # perfil de Diego
+│
+├── skills/                 # 4 skills custom (formato Hermes: SKILL.md)
+│   ├── diego-brave-auth-agent/   # Brave persistente para X, Gmail, Reddit
+│   ├── diego-notes/              # guarda notas en ledger MCP
+│   ├── diego-research/           # investigación dialéctica (Tesis/Antítesis/Síntesis)
+│   └── diego-shopping-scout/     # monitor de precios con detección de cambios
+│
+├── cron/                   # jobs programados (vacío por ahora)
+│
+└── .gitignore              # excluye runtime, caches, secrets
 ```
 
-## Active vs archived
-
-- **Skills** (`diego-*` + `brave-auth-agent`) → drop into `~/.hermes/skills/`
-- **Plugins**:
-  - `personal-ai-ledger` → drop into `~/.hermes/plugins/`
-  - `personal-ai-memory` → **DO NOT INSTALL**. Superseded by Hindsight Cloud (see `~/.hermes/memories/`). Installing both creates a dual-SSOT conflict.
-
-## Install on a new machine
+## Restore en otra máquina
 
 ```bash
-# Skills — drop into ~/.hermes/skills/
-mkdir -p ~/.hermes/skills
-cp -r skills/* ~/.hermes/skills/
+# Clonar
+git clone https://github.com/diegovelezg/dotfiles-hermes-agent.git
 
-# Plugins — only personal-ai-ledger; skip personal-ai-memory
-mkdir -p ~/.hermes/plugins
-cp -r plugins/personal-ai-ledger ~/.hermes/plugins/
+# Skills
+mkdir -p ~/.hermes/profiles/notas/skills
+cp -r skills/* ~/.hermes/profiles/notas/skills/
+
+# Config + memories + cron + SOUL
+mkdir -p ~/.hermes/profiles/notas
+cp -r config/* ~/.hermes/profiles/notas/
+cp -r memories/. ~/.hermes/profiles/notas/memories/
+cp -r cron/. ~/.hermes/profiles/notas/cron/
+
+# Renombrar .env.example → .env y rellenar secrets
+cp config/.env.example ~/.hermes/profiles/notas/.env
+$EDITOR ~/.hermes/profiles/notas/.env
 
 # Verify
 hermes skills list
-hermes plugins list
 hermes doctor
 ```
 
-## Restore
+## Lo que NO está aquí (intencional)
 
-The runtime data, configs, secrets, and skill outputs are intentionally **not** in this repo — they live in `~/.hermes/` and are regenerated from the sources here on a fresh install.
+- **Runtime data**: `state.db`, `sessions/`, `cache/`, `audio_cache/`, `image_cache/`, `logs/`, `runtime/`
+- **Secrets reales**: solo `.env.example` con las keys vacías
+- **Desktop local**: `desktop/`, `workspace/`, `home/`, `hooks/`, `pets/`, `skins/`
+- **Hindsight SSOT**: las memorias duraderas viven en Hindsight (cloud), no en archivos locales
+- **Backups automáticos**: `*.bak.*`, `*.lock`, `*.db`
 
-Last sync with `~/.hermes/`: 2026-08-29.
+Todo eso se regenera al correr Hermes con la config versionada.

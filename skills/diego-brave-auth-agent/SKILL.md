@@ -1,5 +1,5 @@
 ---
-name: brave-auth-agent
+name: diego-brave-auth-agent
 description: Reuse a logged-in Brave session (X, Gmail, Reddit, etc) from agent/cron jobs via a persistent Chromium user-data-dir. Use when the user wants the agent to act on authenticated sites without re-logging in every time, or to monitor an authenticated feed.
 version: 1.0
 author: diegovelezg
